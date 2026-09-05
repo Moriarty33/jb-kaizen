@@ -83,19 +83,34 @@ Requirements: [Claude Code](https://docs.claude.com/en/docs/claude-code) (CLI on
 Optional: GitHub CLI `gh` (authenticated) for PR-review mining, `npx ccusage` for the model-balance phase.
 
 All three paths ask the same seven questions as their single configuration step: the terminal wizard
-for clone and bootstrap (Enter keeps the default), `/kaizen:kaizen-setup` for the plugin, where a skill's
-`Bash` call has no TTY.
+for clone and bootstrap (Enter keeps the default), `/kaizen:setup` (short: `/kz-setup`) for the plugin,
+where a skill's `Bash` call has no TTY.
 
 ### 1. Plugin (recommended)
 
 ```
 /plugin marketplace add Moriarty33/jb-kaizen
 /plugin install kaizen@jb-kaizen
-/kaizen:kaizen-setup
+/kaizen:setup
 ```
 
 The skills become `/kaizen:self-learn`, `/kaizen:model-balance`, `/kaizen:loop-audit` and
-`/kaizen:kaizen-setup`, and the routing hook comes with the plugin - no `settings.json` edit.
+`/kaizen:setup`, and the routing hook comes with the plugin - no `settings.json` edit.
+
+Both invocation forms work. `/kaizen:setup` also installs four short aliases for daily typing -
+`/kz-setup`, `/kz-learn`, `/kz-audit`, `/kz-balance` - each a personal forwarder skill that runs
+the real one. They are the same commands, spelled shorter:
+
+| Short | Plugin | Clone / bootstrap |
+|-------|--------|-------------------|
+| `/kz-setup` | `/kaizen:setup` | the terminal wizard (`./install.sh --wizard`) |
+| `/kz-learn` | `/kaizen:self-learn` | `/self-learn` |
+| `/kz-audit` | `/kaizen:loop-audit` | `/loop-audit` |
+| `/kz-balance` | `/kaizen:model-balance` | `/model-balance` |
+
+Skip them with `./install.sh --no-aliases`, or tell `/kaizen:setup` you do not want them; the
+choice is remembered in `config.json`, and switching it off later removes the alias directories
+a previous run installed.
 
 ### 2. One command
 
@@ -128,8 +143,9 @@ Each step says what it is for before it asks:
 Answers are saved to `~/.claude/self-learn/config.json`, so upgrades and other machines re-run silently
 (outside a terminal it never asks). `./install.sh --wizard` re-opens the questions; flags skip them for scripted
 installs and are remembered: `--workspace DIRS`, `--schedule [HH:MM]`, `--store-remote URL`, `--hook/--no-hook`,
-`--vscode LIST`, `--plugin`, `--yes`. The install itself puts three skills, a routing hook, the retry library and
-a private store in place, then registers every git repo under your roots. Re-running is safe: it upgrades in
+`--vscode LIST`, `--aliases/--no-aliases`, `--plugin`, `--yes`. The install itself puts three skills, the four
+short aliases, a routing hook, the retry library and a private store in place, then registers every git repo
+under your roots. Re-running is safe: it upgrades in
 place, backs up anything it overwrites, and never touches learned state. `--plugin` is for a plugin install
 finishing its setup non-interactively: it skips what the plugin already delivers (the skills copy, the hook
 registration).
@@ -162,12 +178,13 @@ Plugin install: drop the nightly job first - `ROOT="$(ls -td "${CLAUDE_CONFIG_DI
 | `~/.claude/skills/self-learn/` | clone/bootstrap path: the engine - `SKILL.md`, 14 bash scripts, references (workflow script, routing rubric, learned patterns) |
 | `~/.claude/skills/model-balance/` | clone/bootstrap path: model × effort routing audit from `ccusage` data (Phase 2.8, optional) |
 | `~/.claude/skills/loop-audit/` | clone/bootstrap path: design/audit any unattended loop - 6-part contract + three runaway guardrails |
+| `~/.claude/skills/kz-{setup,learn,audit,balance}/` | both paths: the short aliases, one `SKILL.md` each, forwarding to `setup` / `self-learn` / `loop-audit` / `model-balance`; skipped by `--no-aliases` |
 | `~/.claude/hooks/skill-router.py` | clone/bootstrap path: `UserPromptSubmit` hook, one-line nudge toward a skill when your learned phrasings match, silent otherwise - the plugin delivers this hook itself, see the row above |
 | `~/.claude/lib/claude-retry.sh` | bounded retries, wall-clock budget, process-group kill, auth-fail short-circuit |
 | `~/.claude/lib/skill-dir.sh` | resolves the on-disk skill dir for both the clone/bootstrap and plugin layouts; sourced by the nightly runner and the skill scripts |
 | `~/.claude/night-guard-settings.json` | deny-list passed to the nightly run |
 | `~/.claude/self-learn/` | **the private store**: cursors, registry, version manifest, snapshots, routing map, journal, nightly job |
-| `~/.claude/self-learn/config.json` | your install answers: roots, skipped repos, hook, schedule, remote, VS Code choices |
+| `~/.claude/self-learn/config.json` | your install answers: roots, skipped repos, hook, schedule, remote, VS Code choices, aliases |
 | `~/.vscode/extensions/local.claude-launcher-*` | optional: rocket button that opens `claude` at the window root |
 | `~/.vscode/extensions/local.graphify-watch-*` | optional: keeps the graphify graph of the open folder current |
 

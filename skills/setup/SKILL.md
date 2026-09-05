@@ -1,11 +1,11 @@
 ---
-name: kaizen-setup
-description: Configures JB Kaizen after `/plugin install kaizen@jb-kaizen` - the model is the wizard, since a skill's Bash call has no TTY for the interactive one. Asks the same seven questions the terminal wizard asks, then runs one non-interactive install. Use on first install or to reconfigure - "change the nightly time", "change my workspace roots", "point the store at a remote", "add/remove a repository", "toggle the routing hook", "install/remove the VS Code companions". Invoke with `/kaizen:kaizen-setup`; plugin installs only - the clone and bootstrap paths configure through the terminal wizard instead.
+name: setup
+description: Configures JB Kaizen after `/plugin install kaizen@jb-kaizen` - the model is the wizard, since a skill's Bash call has no TTY for the interactive one. Asks the same seven questions the terminal wizard asks, then runs one non-interactive install. Use on first install or to reconfigure - "change the nightly time", "change my workspace roots", "point the store at a remote", "add/remove a repository", "toggle the routing hook", "install/remove the VS Code companions". Invoke with `/kaizen:setup`; plugin installs only - clone and bootstrap use the terminal wizard.
 allowed-tools: Bash, AskUserQuestion
 compatibility: Designed for Claude Code
 ---
 
-# kaizen-setup - JB Kaizen, configured by the model instead of the terminal wizard
+# setup - JB Kaizen, configured by the model instead of the terminal wizard
 
 `install.sh` normally asks seven questions itself when run interactively (`[ -t 0 ]`). A Bash
 call made by Claude from inside a skill has **no TTY**: forcing the interactive wizard
@@ -33,6 +33,10 @@ language the user is writing in. The seven, with the meaning to show the user fo
 | 5 | Nightly run | run every night, and at what local time (launchd / systemd --user / crontab, whichever the OS uses) |
 | 6 | Private remote | a PRIVATE git remote to back the store up to - it holds project names, paths and distilled feedback, never push it anywhere public |
 | 7 | VS Code companions | install `claude-launcher` and/or `graphify-watch` (bundled, MIT, installed through the `code` CLI) |
+
+The install also adds the four short aliases `/kz-setup`, `/kz-learn`, `/kz-audit`, `/kz-balance`
+to `~/.claude/skills/`. If the user says they do not want them, append `--no-aliases` to the
+install command below.
 
 Pre-select sensible defaults (dependencies: yes if any missing; roots: `~/workspace` if it
 exists and holds git repos; repositories: all studied; routing hook: on; nightly: off;
@@ -63,7 +67,7 @@ would silently become `bash "/install.sh"`.
 Build the flags from the answers and run once, output redirected to a log:
 
 ```sh
-bash "$ROOT/install.sh" --plugin --yes --workspace <roots> \
+bash "$ROOT/install.sh" --plugin --yes ${NO_ALIASES} --workspace <roots> \
   [--schedule HH:MM | --no-schedule] [--store-remote <url>] [--vscode all|none|claude-launcher,graphify-watch] \
   [--hook|--no-hook] \
   > /tmp/kaizen-setup.log 2>&1
@@ -77,6 +81,8 @@ tail -20 /tmp/kaizen-setup.log
 - `--vscode` takes the companion list from question 7: `all`, `none`, or a comma-separated
   subset of `claude-launcher,graphify-watch`. `install.sh` matches those tokens only - any
   other word (`yes`) means none.
+- `${NO_ALIASES}` is empty by default; set it to `--no-aliases` only when the user said no to
+  the short aliases.
 - Question 4 maps to `--hook` / `--no-hook` (in `--plugin` mode the hook is not installed
   either way, but the answer is what gets persisted to `config.json`). Question 3's
   repository toggles have no flag - they are saved as `disabledRepos` in `config.json` on the
@@ -113,5 +119,5 @@ the saved config, and nothing destructive happens on a repeat run.
 
 Every answer is saved to `~/.claude/self-learn/config.json` (path resolved through
 `CLAUDE_CONFIG_DIR` the same way as everywhere else). To change one thing later - the nightly
-time, the workspace roots, the private remote - re-run `/kaizen:kaizen-setup` and answer only that
+time, the workspace roots, the private remote - re-run `/kaizen:setup` and answer only that
 question differently; every other answer is carried forward from the saved config.

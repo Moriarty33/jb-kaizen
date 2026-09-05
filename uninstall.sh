@@ -19,6 +19,13 @@ done
 say() { printf '  %s\n' "$*"; }
 run() { if [ "$DRY" -eq 1 ]; then say "[dry-run] $*"; else "$@"; fi; }
 
+# lib/install-aliases.sh owns the alias list and its removal (one place, not two). Sourced
+# before the first removal so a missing lib aborts intact instead of half-uninstalled.
+ALIAS_LIB="$(dirname "$0")/lib/install-aliases.sh"
+[ -f "$ALIAS_LIB" ] || { echo "uninstall: missing $ALIAS_LIB - aborting, nothing was removed" >&2; exit 2; }
+# shellcheck source=lib/install-aliases.sh
+. "$ALIAS_LIB"
+
 echo "==> Scheduler"
 case "$(uname -s)" in
   Darwin)
@@ -36,9 +43,12 @@ case "$(uname -s)" in
 esac
 
 echo "==> Skills"
-for s in self-learn model-balance loop-audit loop-contract setup; do   # last two: pre-1.1.1 names
+for s in self-learn model-balance loop-audit loop-contract kaizen-setup; do   # loop-contract: pre-1.1.1 name; kaizen-setup: pre-1.1.2 name
   [ -d "$CLAUDE_DIR/skills/$s" ] && { run rm -rf "$CLAUDE_DIR/skills/$s"; say "removed $CLAUDE_DIR/skills/$s"; }
 done
+d="$CLAUDE_DIR/skills/setup"   # generic name: ours only when it carries the marker
+[ -d "$d" ] && sl_is_ours "$d" && { run rm -rf "$d"; say "removed $d"; } || true
+aliases_remove
 
 echo "==> Hook"
 HOOK="$CLAUDE_DIR/hooks/skill-router.py"

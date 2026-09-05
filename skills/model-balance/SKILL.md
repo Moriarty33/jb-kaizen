@@ -1,7 +1,7 @@
 ---
 name: model-balance
 description: Analyzes model + effort usage across all Claude Code sessions and rebalances the two dials - intelligence (haiku/sonnet/opus) and effort (low/medium/high/xhigh/max) - so cheaper, faster tiers carry everything that does not need the expensive ones, saving cost and latency with no quality loss. Reads ccusage spend distribution + config routing sites (--model in job/skill scripts, skill frontmatter, workflow agent() calls) and flags over-provisioning (opus where sonnet/haiku suffices) and mis-provisioning. Hybrid apply - auto-applies high-confidence reversible config edits backup-first, defers risky ones to a journal for review. Runs manually and as Phase 2.8 inside self-learn. Use when the user says "balance the models", "optimize model usage", "which models am I overusing", "we could save cost/speed on models", "where can I save on models", or types /model-balance.
-argument-hint: [propose | apply | status]
+argument-hint: "[propose | apply | status]"
 allowed-tools: Read, Edit, Write, Grep, Glob, Bash, AskUserQuestion
 model: sonnet
 compatibility: Designed for Claude Code

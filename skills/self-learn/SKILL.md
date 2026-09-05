@@ -1,7 +1,7 @@
 ---
 name: self-learn
 description: Self-improvement engine for a Claude Code setup. Reads where it left off (per-branch commit cursor + session cursor in persistent state), ingests the next batch of unprocessed git commits oldest-to-newest, recent session transcripts, PR review comments and per-project memories, then runs a multi-agent propose-and-verify analysis to refine your agents and skills for token/cycle/time efficiency with no quality trade-off - versioning and snapshotting every change. Use this whenever the user wants to "self-learn", "evolve the setup", "improve my agents/skills from recent work", "learn from the last sessions/commits", run a retrospective that actually edits the tooling, or types /self-learn. Resumable - each run continues from the last processed commit/session, never reprocessing the same history.
-argument-hint: [apply | propose | --batch N | --repos r1,r2 | status | rollback <id> <version>]
+argument-hint: "[apply | propose | --batch N | --repos r1,r2 | status | rollback <id> <version>]"
 allowed-tools: Read, Edit, Write, Grep, Glob, Bash, AskUserQuestion, Agent, Workflow
 compatibility: Requires git, jq, bash, and the GitHub CLI for PR mining
 ---

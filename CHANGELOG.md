@@ -3,6 +3,50 @@
 All notable changes to this extension are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.1.2] - 2026-09-05
+
+Both invocation forms are supported from here on: the discoverable namespaced commands the
+plugin gives for free, and short ones for daily typing.
+
+### Added
+- Short alias skills `/kz-setup`, `/kz-learn`, `/kz-audit` and `/kz-balance`, installed into
+  `~/.claude/skills/` by `install.sh` in both the clone and the plugin mode. Claude Code has no
+  `alias` field and a plugin skill is always `/<plugin>:<skill>`, so each alias is a personal
+  forwarder skill of under 25 lines: it resolves its target with `sl_skill_dir` and follows that
+  `SKILL.md`, carrying no engine logic of its own. They are `disable-model-invocation: true`, so
+  Claude never auto-invokes an alias and they never compete with the real skills for triggering.
+- `install.sh --aliases / --no-aliases`, remembered as `aliases: true|false` in
+  `config.json` (default true). `--no-aliases` installs none and removes any previously
+  installed alias directory, so switching the answer off actually takes them away.
+  `uninstall.sh` removes all four.
+
+### Changed
+- **BREAKING**: the plugin's `kaizen-setup` skill is `setup` again - the command is
+  `/kaizen:setup` (or the new `/kz-setup`), dropping the `kaizen:kaizen-` stutter. The skill
+  stays plugin-only, so a bare `/setup` can never collide with a skill of your own.
+- Both forms now appear side by side in the docs: `/kaizen:self-learn` and `/kz-learn`,
+  `/kaizen:model-balance` and `/kz-balance`, `/kaizen:loop-audit` and `/kz-audit`,
+  `/kaizen:setup` and `/kz-setup`. On a clone install the long forms stay unnamespaced
+  (`/self-learn`, ...), and `/kz-setup` points at the terminal wizard, which is where clone and
+  bootstrap installs configure.
+
+### Fixed
+- The rename prune in `install.sh` **and `uninstall.sh`** no longer deletes a
+  `~/.claude/skills/setup` you wrote yourself: under that generic name a directory is removed only
+  when its `SKILL.md` carries the JB Kaizen marker. The unambiguous pre-1.1.2 names
+  (`loop-contract`, `kaizen-setup`) are still pruned unconditionally.
+- `/kaizen:setup` now says the four short aliases are part of the install and accepts "no" for
+  them, so the plugin-only route has the same opt-out as `./install.sh --no-aliases`.
+- `uninstall.sh` takes the alias list from `lib/install-aliases.sh` instead of repeating it, so
+  the two can no longer drift.
+
+### Upgrade notes
+- After `/plugin update`, use `/kaizen:setup` (not `/kaizen:kaizen-setup`) and finish with an
+  installer run so the aliases land; on a clone install `./install.sh` prunes a stale
+  `~/.claude/skills/kaizen-setup` left by 1.1.1.
+- Keep the short commands out with `./install.sh --no-aliases`; the namespaced commands are
+  unaffected either way.
+
 ## [1.1.1] - 2026-09-05
 
 ### Changed

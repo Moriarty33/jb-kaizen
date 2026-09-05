@@ -32,7 +32,7 @@ jobs:
           for f in templates/*.json; do jq -e . "$f" >/dev/null; done
       - name: Shellcheck
         if: matrix.os == 'ubuntu-latest'
-        run: shellcheck -S warning tests/*.sh lib/*.sh
+        run: shellcheck -S warning install.sh uninstall.sh bootstrap.sh tests/*.sh lib/*.sh
       - name: Plugin and marketplace manifests
         run: |
           v="$(cat VERSION)"
@@ -42,7 +42,8 @@ jobs:
             and .plugins[0].version==$v' .claude-plugin/marketplace.json >/dev/null
           jq -e '.hooks.UserPromptSubmit[0].hooks[0].command|test("CLAUDE_PLUGIN_ROOT")' \
             hooks/hooks.json >/dev/null
-          test -f skills/kaizen-setup/SKILL.md
+          test -f skills/setup/SKILL.md
+          test ! -d skills/kaizen-setup
       - name: claude plugin validate
         if: matrix.os == 'ubuntu-latest'
         timeout-minutes: 5

@@ -10,7 +10,9 @@ plugin_install() { HOME="$H2" CLAUDE_CONFIG_DIR="$H2/.claude" SELF_LEARN_HOME="$
 no_clone_hook() { [ ! -f "$H2/.claude/settings.json" ] || ! grep -q skill-router "$H2/.claude/settings.json"; }
 route() { echo "{\"prompt\":\"$1\"}" | python3 "$ROOT/hooks/skill-router.py"; }
 plugin_install > "$T/plugin-install.log" 2>&1 || true; check plugin_install   # log: readable diagnosis
-check test ! -d "$H2/.claude/skills"; check test ! -f "$H2/.claude/hooks/skill-router.py"; check no_clone_hook
+for s in self-learn model-balance loop-audit setup; do check test ! -d "$H2/.claude/skills/$s"; done   # plugin delivers the real skills
+for a in kz-setup kz-learn kz-audit kz-balance; do check test -f "$H2/.claude/skills/$a/SKILL.md"; done   # aliases install in BOTH modes (SPEC A2)
+check test ! -f "$H2/.claude/hooks/skill-router.py"; check no_clone_hook
 for p in state.json registry.json config.json routing/routing-map.json scripts/nightly-run.sh; do check test -f "$H2/.claude/self-learn/$p"; done
 check test -f "$H2/.claude/lib/skill-dir.sh"; check test "$(jq -r '.repos | length' "$H2/.claude/self-learn/registry.json")" = "2"
 bak="$(find "$H2/.claude" -name '*.bak-*' | wc -l | tr -d ' ')"; check plugin_install

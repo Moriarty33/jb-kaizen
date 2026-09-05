@@ -5,7 +5,7 @@
 #                                    repo roots, which repos to study, routing hook, nightly
 #                                    time, private remote, VS Code companions
 #   ./install.sh [--workspace DIRS] [--schedule [HH:MM] | --no-schedule] [--store-remote URL]
-#                [--hook | --no-hook] [--vscode LIST] [--plugin] [--wizard] [--yes] [--dry-run]
+#                [--hook | --no-hook] [--vscode LIST] [--aliases|--no-aliases] [--plugin] [--wizard] [--yes] [--dry-run]
 #
 #   --workspace DIRS     root(s) holding your git repos, comma-separated (default ~/workspace).
 #                        Discovered repos are registered in the private store; nothing is
@@ -16,6 +16,7 @@
 #   --store-remote URL   point the private store at a PRIVATE git remote and push once.
 #   --hook / --no-hook   install / skip the UserPromptSubmit routing hook (default: install).
 #   --vscode LIST        VS Code companions: claude-launcher,graphify-watch | all | none.
+#   --aliases/--no-aliases  install / skip the short /kz-* alias commands (default: install).
 #   --wizard             ask the questions even when flags or a saved config exist.
 #   --yes                never ask: flags, then the saved config, then defaults.
 #   --dry-run            print what would change, touch nothing.
@@ -42,7 +43,7 @@ LABEL="com.self-learn.nightly"
 # Answers: empty = not given on the command line (filled from config.json, then defaults).
 # shellcheck disable=SC2034  # the answer variables are consumed by the sourced wizard
 DISABLED_REPOS=""; ROOTS_CSV=""; WITH_HOOK=""; SCHEDULE=""; SCHED_TIME=""; STORE_REMOTE=""
-VSCODE_LAUNCHER=""; VSCODE_GRAPHIFY=""
+VSCODE_LAUNCHER=""; VSCODE_GRAPHIFY=""; ALIASES=""
 WIZARD=0; ASSUME_YES=0; DRY=0; FLAGGED=0; PLUGIN_MODE=0
 
 while [ $# -gt 0 ]; do
@@ -62,6 +63,7 @@ while [ $# -gt 0 ]; do
       case ",$2," in *,graphify-watch,*) VSCODE_GRAPHIFY=1 ;; esac
       shift 2 ;;
     --plugin) PLUGIN_MODE=1; shift ;;
+    --aliases|--no-aliases) FLAGGED=1; if [ "$1" = --aliases ]; then ALIASES=1; else ALIASES=0; fi; shift ;;
     --wizard) WIZARD=1; shift ;;
     --yes|-y) ASSUME_YES=1; shift ;;
     --dry-run) DRY=1; shift ;;
@@ -77,8 +79,8 @@ say()  { printf '  %s\n' "$*"; }
 step() { printf '\n==> %s\n' "$*"; }
 run()  { if [ "$DRY" -eq 1 ]; then say "[dry-run] $*"; else "$@"; fi; }
 
-. "$SRC/lib/install-deps.sh"
-. "$SRC/lib/skill-dir.sh"
+. "$SRC/lib/install-deps.sh"; . "$SRC/lib/skill-dir.sh"
+. "$SRC/lib/install-aliases.sh"
 . "$SRC/lib/install-wizard.sh"
 . "$SRC/lib/install-summary.sh"
 
@@ -140,7 +142,7 @@ else
   step "Installing skills into $CLAUDE_DIR/skills"
   for sk in "$SRC"/skills/*/; do
     name="$(basename "$sk")"
-    if [ "$name" = kaizen-setup ]; then continue; fi   # plugin-only: needs ${CLAUDE_PLUGIN_ROOT}
+    if [ "$name" = setup ]; then continue; fi   # plugin-only: needs ${CLAUDE_PLUGIN_ROOT}
     dest="$CLAUDE_DIR/skills/$name"
     while IFS= read -r f; do
       rel="${f#"$sk"}"
@@ -151,8 +153,8 @@ else
     done < <(find "$sk" -type f | sort)
     [ "$DRY" -eq 1 ] || chmod +x "$dest"/scripts/*.sh 2>/dev/null || true
   done
-  for old in loop-contract setup; do   # renamed in 1.1.1 - drop the stale copies
-    [ -d "$CLAUDE_DIR/skills/$old" ] && { run rm -rf "$CLAUDE_DIR/skills/$old"; say "removed $CLAUDE_DIR/skills/$old (renamed)"; } || true
+  for old in loop-contract kaizen-setup setup; do   # renamed in 1.1.1/1.1.2; `setup` may be the user's own, so it goes only with our marker
+    d="$CLAUDE_DIR/skills/$old"; [ -d "$d" ] && { [ "$old" != setup ] || sl_is_ours "$d"; } && { run rm -rf "$d"; say "removed $d (renamed)"; } || true
   done
 fi
 
@@ -160,6 +162,7 @@ fi
 step "Installing runtime pieces into $CLAUDE_DIR"
 put  "$SRC/lib/claude-retry.sh"               "$CLAUDE_DIR/lib/claude-retry.sh"
 put  "$SRC/lib/skill-dir.sh"                  "$CLAUDE_DIR/lib/skill-dir.sh"
+aliases_apply "${ALIASES:-1}"
 seed "$SRC/templates/night-guard-settings.json" "$CLAUDE_DIR/night-guard-settings.json"
 
 # ---------- 3. routing hook ----------

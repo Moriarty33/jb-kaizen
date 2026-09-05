@@ -9,12 +9,15 @@
 # Caller contract (install.sh): SRC, SL_HOME, CLAUDE_DIR, DRY, say(), step() and the deps
 # table (lib/install-deps.sh) exist; the answer variables ROOTS_CSV, WITH_HOOK, SCHEDULE,
 # SCHED_TIME, STORE_REMOTE, DISABLED_REPOS, VSCODE_LAUNCHER, VSCODE_GRAPHIFY hold whatever
-# the flags set (empty = not given) and are completed here. Answers come from stdin, so a
-# piped answer file drives the wizard non-interactively (that is how the tests use it).
+# the flags set (empty = not given) and are completed here - ALIASES included, which has no
+# question of its own (default on when the caller leaves it unset; --no-aliases turns the short
+# /kz-* commands off). Answers come from stdin, so a piped answer file drives the wizard
+# non-interactively (that is how the tests use it).
 # Also relies on sl_skill_dir from lib/skill-dir.sh (loaded below when not already sourced)
 # to resolve the self-learn skill directory in both repo and plugin-cache layouts.
 
 if ! command -v sl_skill_dir >/dev/null 2>&1; then . "$SRC/lib/skill-dir.sh"; fi
+if ! command -v aliases_list  >/dev/null 2>&1; then . "$SRC/lib/install-aliases.sh"; fi
 
 CONFIG_FILE="$SL_HOME/config.json"
 PREV_DISABLED=""
@@ -32,6 +35,7 @@ wizard_load_config() {
   [ -n "$STORE_REMOTE" ]    || STORE_REMOTE="$(jq -r '.storeRemote // ""' "$CONFIG_FILE")"
   [ -n "$VSCODE_LAUNCHER" ] || VSCODE_LAUNCHER="$(jq -r 'if .vscode.claudeLauncher == true then 1 else 0 end' "$CONFIG_FILE")"
   [ -n "$VSCODE_GRAPHIFY" ] || VSCODE_GRAPHIFY="$(jq -r 'if .vscode.graphifyWatch == true then 1 else 0 end' "$CONFIG_FILE")"
+  [ -n "${ALIASES:-}" ]     || ALIASES="$(jq -r 'if .aliases == false then 0 else 1 end' "$CONFIG_FILE")"
   PREV_DISABLED="$(jq -r '(.disabledRepos // [])[]' "$CONFIG_FILE")"
   DISABLED_REPOS="$PREV_DISABLED"
 }
@@ -43,6 +47,7 @@ wizard_defaults() {
   [ -n "$SCHED_TIME" ]      || SCHED_TIME="03:07"
   [ -n "$VSCODE_LAUNCHER" ] || VSCODE_LAUNCHER=0
   [ -n "$VSCODE_GRAPHIFY" ] || VSCODE_GRAPHIFY=0
+  [ -n "${ALIASES:-}" ]     || ALIASES=1
 }
 
 json_bool() { if [ "$1" = 1 ]; then echo true; else echo false; fi; }
@@ -56,10 +61,11 @@ wizard_save_config() {
   jq -n --argjson roots "$roots_json" --argjson hook "$(json_bool "$WITH_HOOK")" \
         --argjson sched "$(json_bool "$SCHEDULE")" --arg time "$SCHED_TIME" --arg remote "$STORE_REMOTE" \
         --argjson disabled "$disabled_json" --argjson launcher "$(json_bool "$VSCODE_LAUNCHER")" \
-        --argjson gw "$(json_bool "$VSCODE_GRAPHIFY")" --arg ver "$(cat "$SRC/VERSION")" '
+        --argjson gw "$(json_bool "$VSCODE_GRAPHIFY")" --argjson aliases "$(json_bool "${ALIASES:-1}")" \
+        --arg ver "$(cat "$SRC/VERSION")" '
     {version: 1, roots: $roots, disabledRepos: $disabled, hook: $hook,
      schedule: {enabled: $sched, time: $time}, storeRemote: $remote,
-     vscode: {claudeLauncher: $launcher, graphifyWatch: $gw},
+     vscode: {claudeLauncher: $launcher, graphifyWatch: $gw}, aliases: $aliases,
      installedVersion: $ver, updatedAt: (now | todate)}
   ' > "$CONFIG_FILE"
   say "saved   $CONFIG_FILE"
@@ -212,7 +218,7 @@ wizard_run() {
   step "Setup wizard  (Enter keeps the default; re-run any time with: $0 --wizard)"
   if [ -f "$CONFIG_FILE" ] && [ -n "$ROOTS_CSV" ]; then
     say "saved configuration in $CONFIG_FILE:"
-    say "  roots $ROOTS_CSV | skipped repos $(count_disabled) | hook $([ "$WITH_HOOK" = 1 ] && echo on || echo off) | nightly $([ "$SCHEDULE" = 1 ] && echo "at $SCHED_TIME" || echo off) | remote ${STORE_REMOTE:-none} | vscode launcher=$(yn_default "$VSCODE_LAUNCHER") graphify-watch=$(yn_default "$VSCODE_GRAPHIFY")"
+    say "  roots $ROOTS_CSV | skipped repos $(count_disabled) | hook $([ "$WITH_HOOK" = 1 ] && echo on || echo off) | nightly $([ "$SCHEDULE" = 1 ] && echo "at $SCHED_TIME" || echo off) | remote ${STORE_REMOTE:-none} | vscode launcher=$(yn_default "$VSCODE_LAUNCHER") graphify-watch=$(yn_default "$VSCODE_GRAPHIFY") | short aliases $([ "${ALIASES:-1}" = 1 ] && echo on || echo off)"
     yes_no "Keep it and just upgrade" y && return 0
   fi
   ask_deps
@@ -229,6 +235,7 @@ wizard_run() {
   say "nightly:  $([ "$SCHEDULE" = 1 ] && echo "every day at $SCHED_TIME" || echo off)"
   say "remote:   ${STORE_REMOTE:-none (store stays local)}"
   say "vscode:   claude-launcher=$(yn_default "$VSCODE_LAUNCHER") graphify-watch=$(yn_default "$VSCODE_GRAPHIFY")"
+  say "aliases:  $([ "${ALIASES:-1}" = 1 ] && aliases_list || echo "skipped")"
   say "saved to: $CONFIG_FILE"
   yes_no "Proceed" y || { echo "aborted - nothing was changed"; exit 0; }
 }

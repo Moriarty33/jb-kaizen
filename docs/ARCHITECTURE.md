@@ -16,11 +16,17 @@ Two install modes deliver the same engine:
   CI check. `skills/` and `hooks/hooks.json` are auto-discovered by Claude Code from the plugin root -
   no registration step. The hook command in `hooks/hooks.json` runs
   `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/skill-router.py"`, so it resolves against wherever the plugin
-  cache placed this version rather than a fixed path. First-run configuration is the `/kaizen:kaizen-setup`
+  cache placed this version rather than a fixed path. First-run configuration is the `/kaizen:setup`
   skill: a non-interactive wizard, needed because a skill's `Bash` call has no TTY for the terminal one.
 - **Clone / bootstrap** - `git clone` + `./install.sh`, or the one-line `bootstrap.sh` that does the
   same and opens the wizard, copy the skills under `~/.claude/skills/*` and register the hook in
   `~/.claude/settings.json` by hand.
+- **Short aliases** - `templates/aliases/kz-{setup,learn,audit,balance}/SKILL.md` are installed into
+  `~/.claude/skills/` by `install.sh` in both modes (`--no-aliases` opts out). Claude Code has no
+  `alias` field and a plugin skill is always `/<plugin>:<skill>`, so each is a personal forwarder
+  skill that resolves its target with `sl_skill_dir` and follows that `SKILL.md`;
+  `disable-model-invocation: true` keeps them out of automatic triggering. `lib/install-aliases.sh`
+  owns the list, the install and the removal.
 
 `install.sh --plugin` is the seam between them: it runs the same wizard and writes the same
 `config.json`, but skips the skills copy and the hook registration, because the plugin already

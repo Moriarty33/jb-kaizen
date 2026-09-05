@@ -28,7 +28,7 @@ check python3 -m py_compile "$ROOT/hooks/skill-router.py"
 check jq -e . "$ROOT/templates/routing-map.json"
 check jq -e . "$ROOT/templates/night-guard-settings.json"
 
-# ---- 0b. plugin manifests, hooks.json, kaizen-setup skill, bootstrap syntax ----
+# ---- 0b. plugin manifests, hooks.json, setup skill, bootstrap syntax ----
 VER="$(cat "$ROOT/VERSION")"; for m in .claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json; do check jq -e . "$ROOT/$m"; done
 check jq -e --arg v "$VER" '.name=="kaizen" and .version==$v and (.repository|length>0)' "$ROOT/.claude-plugin/plugin.json"
 MKT="$ROOT/.claude-plugin/marketplace.json"
@@ -46,7 +46,8 @@ check jq -e '.hooks.UserPromptSubmit[0].hooks[0].command|test("hooks/skill-route
 # every skill's frontmatter name must equal its directory (the spec requires it; renames break it silently)
 skill_name_matches_dir() { for d in "$ROOT"/skills/*/; do n="$(basename "$d")"; grep -qx "name: $n" "$d/SKILL.md" || return 1; done; }
 check skill_name_matches_dir
-check test -f "$ROOT/skills/kaizen-setup/SKILL.md"; check grep -q -- '--plugin --yes' "$ROOT/skills/kaizen-setup/SKILL.md"; check bash -n "$ROOT/bootstrap.sh"; check test -x "$ROOT/bootstrap.sh"
+check test -f "$ROOT/skills/setup/SKILL.md"; check grep -q -- '--plugin --yes' "$ROOT/skills/setup/SKILL.md"; check bash -n "$ROOT/bootstrap.sh"; check test -x "$ROOT/bootstrap.sh"
+check grep -q 'JB Kaizen' "$ROOT/skills/setup/SKILL.md"   # install.sh:157 prunes a stale ~/.claude/skills/setup only by this marker
 
 # ---- 1. synthetic workspace: two repos, one with two branches ----
 WS="$HOME/workspace"; mkdir -p "$WS"
@@ -74,7 +75,12 @@ check test ! -d "$CLAUDE_CONFIG_DIR/skills/loop-contract"
 check test -f "$CLAUDE_CONFIG_DIR/lib/claude-retry.sh"
 check test -f "$CLAUDE_CONFIG_DIR/hooks/skill-router.py"
 check test -f "$CLAUDE_CONFIG_DIR/night-guard-settings.json"
-check test ! -d "$CLAUDE_CONFIG_DIR/skills/kaizen-setup"  # plugin-only: it needs CLAUDE_PLUGIN_ROOT
+check test ! -d "$CLAUDE_CONFIG_DIR/skills/setup"  # plugin-only: it needs CLAUDE_PLUGIN_ROOT
+mkdir -p "$CLAUDE_CONFIG_DIR/skills/setup"; printf -- '---\nname: setup\n---\nmine\n' > "$CLAUDE_CONFIG_DIR/skills/setup/SKILL.md"
+check bash "$ROOT/install.sh" --yes --workspace "$WS"
+check grep -q mine "$CLAUDE_CONFIG_DIR/skills/setup/SKILL.md"   # a user's own /setup survives the rename prune
+rm -rf "$CLAUDE_CONFIG_DIR/skills/setup"
+. "$ROOT/tests/alias-checks.sh"
 for p in state.json registry.json pagination.json versions.json scripts/nightly-run.sh nightly-prompt.txt routing/routing-map.json routing/intent-lexicon.md .gitignore; do
   check test -f "$SELF_LEARN_HOME/$p"
 done
@@ -269,9 +275,16 @@ check grep -q 'remote already up to date' <<<"$(bash "$S/sync.sh")"
 r="$(SELF_LEARN_WORKSPACE="$T/nope" bash "$SELF_LEARN_HOME/scripts/nightly-run.sh" || true)"
 check grep -q 'workspace' "$(ls -t "$SELF_LEARN_HOME"/logs/nightly-*.log | head -1)"
 mkdir -p "$CLAUDE_CONFIG_DIR/skills/loop-contract"
+mkdir -p "$CLAUDE_CONFIG_DIR/skills/setup"; printf -- '---\nname: setup\n---\nmine\n' > "$CLAUDE_CONFIG_DIR/skills/setup/SKILL.md"
+check bash "$ROOT/install.sh" --aliases --yes --workspace "$WS"
+check test -d "$CLAUDE_CONFIG_DIR/skills/kz-setup"   # armed, so the post-uninstall check below is not vacuous
+check jq -e '.aliases == true' "$SELF_LEARN_HOME/config.json"
 check bash "$ROOT/uninstall.sh"
+check grep -q mine "$CLAUDE_CONFIG_DIR/skills/setup/SKILL.md"   # a user's own /setup survives uninstall too
+rm -rf "$CLAUDE_CONFIG_DIR/skills/setup"
 check test ! -d "$CLAUDE_CONFIG_DIR/skills/loop-contract"
 check test ! -d "$CLAUDE_CONFIG_DIR/skills/self-learn"
+check test ! -d "$CLAUDE_CONFIG_DIR/skills/kz-setup"
 check test -d "$SELF_LEARN_HOME"
 check jq -e '[.hooks.UserPromptSubmit[].hooks[].command] == ["echo other"]' "$CLAUDE_CONFIG_DIR/settings.json"
 check bash "$ROOT/uninstall.sh" --purge-store

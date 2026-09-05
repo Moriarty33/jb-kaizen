@@ -8,7 +8,7 @@
       "source": "./",
       "displayName": "JB Kaizen",
       "description": "Self-improvement engine for a Claude Code setup: learns from commits and sessions to refine agents and skills, with a routing hook that keeps skill triggering sharp.",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "license": "MIT",
       "category": "productivity",
       "keywords": ["self-improvement", "nightly", "skills", "agents", "automation"]

@@ -68,19 +68,34 @@ Memory проєкту - найдорожчий вхід: `MEMORY.md` ванта�
 Опційно: `gh` (авторизований) для PR-рев'ю, `npx ccusage` для фази балансу моделей.
 
 Усі три шляхи ставлять ті самі сім питань як єдиний крок налаштування: термінальний майстер для
-клонування/bootstrap (Enter лишає дефолт) і `/kaizen:kaizen-setup` для плагіна, де у `Bash`-виклику скіла немає TTY.
+клонування/bootstrap (Enter лишає дефолт) і `/kaizen:setup` (скорочено `/kz-setup`) для плагіна,
+де у `Bash`-виклику скіла немає TTY.
 
 ### 1. Плагін (рекомендовано)
 
 ```
 /plugin marketplace add Moriarty33/jb-kaizen
 /plugin install kaizen@jb-kaizen
-/kaizen:kaizen-setup
+/kaizen:setup
 ```
 
 Скіли стають `/kaizen:self-learn`, `/kaizen:model-balance`, `/kaizen:loop-audit` і
-`/kaizen:kaizen-setup`,
+`/kaizen:setup`,
 а хук роутингу приходить разом із плагіном - без правок `settings.json`.
+
+Працюють обидві форми виклику. `/kaizen:setup` також ставить чотири короткі аліаси для щоденного
+набору - `/kz-setup`, `/kz-learn`, `/kz-audit`, `/kz-balance`. Кожен - персональний скіл-форвардер,
+який просто запускає справжній: ті самі команди, лише коротше.
+
+| Скорочено | Плагін | Клонування / bootstrap |
+|-----------|--------|------------------------|
+| `/kz-setup` | `/kaizen:setup` | термінальний майстер (`./install.sh --wizard`) |
+| `/kz-learn` | `/kaizen:self-learn` | `/self-learn` |
+| `/kz-audit` | `/kaizen:loop-audit` | `/loop-audit` |
+| `/kz-balance` | `/kaizen:model-balance` | `/model-balance` |
+
+Не потрібні - `./install.sh --no-aliases` або скажіть це `/kaizen:setup`; вибір
+запам'ятовується в `config.json`, а вимкнення прибирає аліаси, які поставив попередній запуск.
 
 ### 2. Одна команда
 
@@ -113,7 +128,7 @@ cd jb-kaizen
 Відповіді зберігаються в `~/.claude/self-learn/config.json`, тож оновлення та інші машини проходять тихо
 (поза терміналом майстер не питає нічого). `./install.sh --wizard` відкриває питання знову; прапорці пропускають
 їх для скриптового встановлення і запам'ятовуються: `--workspace DIRS`, `--schedule [HH:MM]`, `--store-remote URL`,
-`--hook/--no-hook`, `--vscode LIST`, `--plugin`, `--yes`. `--plugin` - для плагінного встановлення, що
+`--hook/--no-hook`, `--vscode LIST`, `--aliases/--no-aliases`, `--plugin`, `--yes`. `--plugin` - для плагінного встановлення, що
 неінтерактивно завершує налаштування: пропускає те, що плагін уже приніс сам (копію скілів, реєстрацію хука).
 
 Спершу спробуйте інтерактивно - у цьому режимі нічого не редагується:
@@ -143,12 +158,13 @@ claude
 | `~/.claude/skills/self-learn/` | шлях клонування/bootstrap: двигун - `SKILL.md`, 14 bash-скриптів, довідники (workflow, роутинг-рубрика, learned patterns) |
 | `~/.claude/skills/model-balance/` | шлях клонування/bootstrap: аудит моделі × зусилля з даних `ccusage` (фаза 2.8, опційно) |
 | `~/.claude/skills/loop-audit/` | шлях клонування/bootstrap: контракт із 6 частин + три запобіжники для будь-якого автономного циклу |
+| `~/.claude/skills/kz-{setup,learn,audit,balance}/` | обидва шляхи: короткі аліаси, по одному `SKILL.md`, що ведуть до `setup` / `self-learn` / `loop-audit` / `model-balance`; `--no-aliases` їх не ставить |
 | `~/.claude/hooks/skill-router.py` | шлях клонування/bootstrap: хук `UserPromptSubmit`, один рядок підказки, коли збігається вивчена фраза; інакше тиша - плагін приносить цей хук сам, див. рядок вище |
 | `~/.claude/lib/claude-retry.sh` | обмежені ретраї, бюджет часу, kill усієї process group, стоп на auth-помилці |
 | `~/.claude/lib/skill-dir.sh` | резолвить теку скіла на диску для обох варіантів - клонування/bootstrap і плагіна; підключається нічним раннером і скриптами скілів |
 | `~/.claude/night-guard-settings.json` | deny-list для нічного запуску |
 | `~/.claude/self-learn/` | **приватне сховище**: курсори, реєстр, версії, снапшоти, роутинг-мапа, журнал, нічна джоба |
-| `~/.claude/self-learn/config.json` | ваші відповіді майстру: корені, вимкнені репо, хук, розклад, remote, вибір VS Code |
+| `~/.claude/self-learn/config.json` | ваші відповіді майстру: корені, вимкнені репо, хук, розклад, remote, вибір VS Code, аліаси |
 | `~/.vscode/extensions/local.claude-launcher-*` | опційно: кнопка-ракета, що відкриває `claude` у корені вікна |
 | `~/.vscode/extensions/local.graphify-watch-*` | опційно: тримає graphify-граф відкритої теки актуальним |
 
