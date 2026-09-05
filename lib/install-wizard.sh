@@ -11,6 +11,10 @@
 # SCHED_TIME, STORE_REMOTE, DISABLED_REPOS, VSCODE_LAUNCHER, VSCODE_GRAPHIFY hold whatever
 # the flags set (empty = not given) and are completed here. Answers come from stdin, so a
 # piped answer file drives the wizard non-interactively (that is how the tests use it).
+# Also relies on sl_skill_dir from lib/skill-dir.sh (loaded below when not already sourced)
+# to resolve the self-learn skill directory in both repo and plugin-cache layouts.
+
+if ! command -v sl_skill_dir >/dev/null 2>&1; then . "$SRC/lib/skill-dir.sh"; fi
 
 CONFIG_FILE="$SL_HOME/config.json"
 PREV_DISABLED=""
@@ -63,7 +67,9 @@ wizard_save_config() {
 
 # disabledRepos -> registry, and repos switched back on in the wizard -> enabled again.
 apply_repo_toggles() {
-  local p reg="$CLAUDE_DIR/skills/self-learn/scripts/register.sh"
+  local p reg
+  reg="$(sl_skill_dir)/scripts/register.sh" || {
+    say "WARN cannot locate the self-learn skill directory - repo toggles skipped"; return 1; }
   while IFS= read -r p; do
     { [ -n "$p" ] && [ -d "$p" ]; } || continue
     SELF_LEARN_HOME="$SL_HOME" bash "$reg" "$p" "$(basename "$p")" --disabled | sed 's/^/  /'

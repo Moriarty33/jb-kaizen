@@ -6,6 +6,8 @@ set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$DIR/lib.sh"
 sl_init
+C="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+. "$C/lib/skill-dir.sh"
 
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 items="[]"
@@ -16,7 +18,7 @@ add() { # id scope type name path hash
 }
 
 # Global agents
-for f in "$HOME"/.claude/agents/*.md; do
+for f in "$C"/agents/*.md; do
   [ -e "$f" ] || continue; n="$(basename "$f" .md)"
   add "global:agent:$n" global agent "$n" "$f" "$(sl_hash_file "$f")"
 done
@@ -31,10 +33,17 @@ if [ -d "$PROJECT_ROOT/.claude/agents" ]; then
   done < <(find "$PROJECT_ROOT/.claude/agents" -name '*.md')
 fi
 # Global skills
-for d in "$HOME"/.claude/skills/*/; do
+for d in "$C"/skills/*/; do
   [ -f "${d}SKILL.md" ] || continue; n="$(basename "$d")"
   add "global:skill:$n" global skill "$n" "${d%/}" "$(sl_hash_dir "$d")"
 done
+# Plugin-delivered skills (kaizen cache only - not every third-party plugin)
+while IFS= read -r d; do
+  [ -f "$d/SKILL.md" ] || continue; n="$(basename "$d")"
+  # a clone-installed copy of the same skill already owns global:skill:$n
+  if [ -d "$C/skills/$n" ]; then continue; fi
+  add "plugin:skill:$n" global skill "$n" "$d" "$(sl_hash_dir "$d/")"
+done < <(sl_kaizen_skill_dirs)
 # Project skills
 if [ -d "$PROJECT_ROOT/.claude/skills" ]; then
   for d in "$PROJECT_ROOT"/.claude/skills/*/; do

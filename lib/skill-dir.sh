@@ -40,5 +40,13 @@ sl_skill_dir() {
   printf '%s\n' "$d"
 }
 
+# sl_kaizen_skill_dirs - print every kaizen plugin-cache skill directory, one per line.
+sl_kaizen_skill_dirs() {
+  local c d; c="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+  for d in "$c"/plugins/cache/*/kaizen/*/skills/*/; do
+    [ -d "$d" ] || continue; printf '%s\n' "${d%/}"
+  done
+}
+
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then sl_skill_dir "$@"; fi
 :

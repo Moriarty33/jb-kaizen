@@ -59,7 +59,11 @@ singular where the real skill is plural):
 python3 - <<'EOF'
 import json, os, glob
 d = json.load(open(os.path.expanduser('~/.claude/self-learn/routing/routing-map.json')))
-sk = set(os.listdir(os.path.expanduser('~/.claude/skills')))
+cfg = os.environ.get('CLAUDE_CONFIG_DIR') or os.path.expanduser('~/.claude')
+p = os.path.join(cfg, 'skills')
+sk = set(os.listdir(p)) if os.path.isdir(p) else set()
+# kaizen plugin cache only - not every third-party plugin's skills
+sk.update(os.path.basename(g) for g in glob.glob(os.path.join(cfg, 'plugins/cache/*/kaizen/*/skills/*')))
 for g in glob.glob(os.path.expanduser('~/workspace/*/*/.claude/skills/*')) + \
          glob.glob(os.path.expanduser('~/workspace/*/.claude/skills/*')):
     sk.add(os.path.basename(g))          # project-scoped skills are legitimate targets

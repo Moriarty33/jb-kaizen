@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "note": "Maintained by the self-learn Routing & Intent phase (2.6). keywords are lowercased substrings matched against the user prompt; hint is the one-line nudge injected by ~/.claude/hooks/skill-router.py. Every keyword should cite, in intent-lexicon.md, the session that motivated it. Seeded with the engine's own triggers; self-learn adds YOUR phrasings (any language, plus speech-to-text mishears) as it observes them.",
+  "note": "Maintained by the self-learn Routing & Intent phase (2.6). keywords are lowercased substrings matched against the user prompt; hint is the one-line nudge injected by the UserPromptSubmit hook (~/.claude/hooks/skill-router.py on a clone install, delivered by the plugin otherwise). Every keyword should cite, in intent-lexicon.md, the session that motivated it. Seeded with the engine's own triggers; self-learn adds YOUR phrasings (any language, plus speech-to-text mishears) as it observes them.",
   "rules": [
     {
       "skill": "self-learn",
-      "hint": "Learn from recent work / evolve the setup -> /self-learn (resumable, snapshot-first, propose by default).",
+      "hint": "Learn from recent work / evolve the setup -> /self-learn (or /kaizen:self-learn under the plugin) (resumable, snapshot-first, propose by default).",
       "keywords": [
         "self-learn",
         "self learn",

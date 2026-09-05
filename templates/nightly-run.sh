@@ -42,6 +42,11 @@ cd "$WORKSPACE" 2>/dev/null || { echo "FATAL: workspace $WORKSPACE missing - abo
   fi
   export CLAUDE_RETRY_TIMEOUT="${CLAUDE_RETRY_TIMEOUT:-14400}"
   . "$HOME/.claude/lib/claude-retry.sh"
+  _c="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+  if [ -f "$_c/lib/skill-dir.sh" ]; then
+    . "$_c/lib/skill-dir.sh"
+    if _sd="$(sl_skill_dir)"; then export SELF_LEARN_SKILL_DIR="$_sd"; fi
+  fi
   # File-access scope: trust only the workspace (cwd) + ~/.claude, and hard-deny personal
   # folders via night-guard-settings.json so no access prompt ever fires.
   # --max-budget-usd is the one hard spend ceiling that survives ultracode-mode fan-out.

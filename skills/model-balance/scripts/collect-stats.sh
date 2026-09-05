@@ -44,9 +44,16 @@ echo
 # broad - narrowing it to a tier alternation silently drops real forms such as opusplan
 # and default, which is the one direction this detector must never fail in.
 echo "## 3. Explicit model-routing sites (LIVE only; snapshots excluded)"
+# Kaizen's own plugin-cache skills too (not every third-party plugin's).
+C="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+kaizen_dirs=()
+if [ -f "$C/lib/skill-dir.sh" ]; then
+  . "$C/lib/skill-dir.sh"
+  while IFS= read -r d; do kaizen_dirs+=("$d"); done < <(sl_kaizen_skill_dirs)
+fi
 grep -rnE --include='*.sh' --exclude-dir=logs --exclude-dir=backups --exclude-dir=snapshots -e '--model[[:space:]=]+[a-z0-9-]+' \
   "$HOME/.claude/self-learn" "$HOME/.claude/lib" "$HOME/.claude/skills" \
-  ${MODEL_BALANCE_EXTRA_DIRS:-} 2>/dev/null \
+  ${kaizen_dirs[@]+"${kaizen_dirs[@]}"} ${MODEL_BALANCE_EXTRA_DIRS:-} 2>/dev/null \
   | grep -vE '\.bak' | sed -E 's#^'"$HOME"'/#  ~/#' | head -40
 
 echo

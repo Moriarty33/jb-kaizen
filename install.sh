@@ -5,7 +5,7 @@
 #                                    repo roots, which repos to study, routing hook, nightly
 #                                    time, private remote, VS Code companions
 #   ./install.sh [--workspace DIRS] [--schedule [HH:MM] | --no-schedule] [--store-remote URL]
-#                [--hook | --no-hook] [--vscode LIST] [--wizard] [--yes] [--dry-run]
+#                [--hook | --no-hook] [--vscode LIST] [--plugin] [--wizard] [--yes] [--dry-run]
 #
 #   --workspace DIRS     root(s) holding your git repos, comma-separated (default ~/workspace).
 #                        Discovered repos are registered in the private store; nothing is
@@ -19,6 +19,8 @@
 #   --wizard             ask the questions even when flags or a saved config exist.
 #   --yes                never ask: flags, then the saved config, then defaults.
 #   --dry-run            print what would change, touch nothing.
+#   --plugin             plugin install: skip what the plugin already delivers (skills, routing-hook
+#                        registration); still do deps, config.json, store, discovery, scheduler, VS Code.
 #
 # Precedence on every run: flags > $SELF_LEARN_HOME/config.json > defaults. The effective
 # answers are written back to config.json, so the next run - an upgrade, CI, another machine
@@ -39,9 +41,9 @@ STAMP="$(date +%Y%m%d%H%M%S)"
 LABEL="com.self-learn.nightly"
 # Answers: empty = not given on the command line (filled from config.json, then defaults).
 # shellcheck disable=SC2034  # the answer variables are consumed by the sourced wizard
-ROOTS_CSV=""; WITH_HOOK=""; SCHEDULE=""; SCHED_TIME=""; STORE_REMOTE=""; DISABLED_REPOS=""
+DISABLED_REPOS=""; ROOTS_CSV=""; WITH_HOOK=""; SCHEDULE=""; SCHED_TIME=""; STORE_REMOTE=""
 VSCODE_LAUNCHER=""; VSCODE_GRAPHIFY=""
-WIZARD=0; ASSUME_YES=0; DRY=0; FLAGGED=0
+WIZARD=0; ASSUME_YES=0; DRY=0; FLAGGED=0; PLUGIN_MODE=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -59,6 +61,7 @@ while [ $# -gt 0 ]; do
       case ",$2," in *,claude-launcher,*) VSCODE_LAUNCHER=1 ;; esac
       case ",$2," in *,graphify-watch,*) VSCODE_GRAPHIFY=1 ;; esac
       shift 2 ;;
+    --plugin) PLUGIN_MODE=1; shift ;;
     --wizard) WIZARD=1; shift ;;
     --yes|-y) ASSUME_YES=1; shift ;;
     --dry-run) DRY=1; shift ;;
@@ -67,12 +70,17 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# Plugin mode: point rule 1 of sl_skill_dir at the plugin checkout this installer runs from.
+if [ "$PLUGIN_MODE" -eq 1 ]; then export SELF_LEARN_SKILL_DIR="${SELF_LEARN_SKILL_DIR:-$SRC/skills/self-learn}"; fi
+
 say()  { printf '  %s\n' "$*"; }
 step() { printf '\n==> %s\n' "$*"; }
 run()  { if [ "$DRY" -eq 1 ]; then say "[dry-run] $*"; else "$@"; fi; }
 
 . "$SRC/lib/install-deps.sh"
+. "$SRC/lib/skill-dir.sh"
 . "$SRC/lib/install-wizard.sh"
+. "$SRC/lib/install-summary.sh"
 
 # ---------- 0. answers: flags > saved config > wizard > defaults ----------
 wizard_load_config
@@ -125,27 +133,34 @@ render() {
 }
 
 # ---------- 1. skills ----------
-step "Installing skills into $CLAUDE_DIR/skills"
-for sk in "$SRC"/skills/*/; do
-  name="$(basename "$sk")"
-  dest="$CLAUDE_DIR/skills/$name"
-  while IFS= read -r f; do
-    rel="${f#"$sk"}"
-    case "$rel" in
-      references/learned-patterns*.md|journal/*) seed "$f" "$dest/$rel" ;;   # accumulated state
-      *) put "$f" "$dest/$rel" ;;
-    esac
-  done < <(find "$sk" -type f | sort)
-  [ "$DRY" -eq 1 ] || chmod +x "$dest"/scripts/*.sh 2>/dev/null || true
-done
+if [ "$PLUGIN_MODE" -eq 1 ]; then
+  step "Skills"
+  say "skip    delivered by the plugin"
+else
+  step "Installing skills into $CLAUDE_DIR/skills"
+  for sk in "$SRC"/skills/*/; do
+    name="$(basename "$sk")"
+    if [ "$name" = setup ]; then continue; fi   # plugin-only: needs ${CLAUDE_PLUGIN_ROOT}
+    dest="$CLAUDE_DIR/skills/$name"
+    while IFS= read -r f; do
+      rel="${f#"$sk"}"
+      case "$rel" in
+        references/learned-patterns*.md|journal/*) seed "$f" "$dest/$rel" ;;   # accumulated state
+        *) put "$f" "$dest/$rel" ;;
+      esac
+    done < <(find "$sk" -type f | sort)
+    [ "$DRY" -eq 1 ] || chmod +x "$dest"/scripts/*.sh 2>/dev/null || true
+  done
+fi
 
 # ---------- 2. lib + guard settings ----------
 step "Installing runtime pieces into $CLAUDE_DIR"
 put  "$SRC/lib/claude-retry.sh"               "$CLAUDE_DIR/lib/claude-retry.sh"
+put  "$SRC/lib/skill-dir.sh"                  "$CLAUDE_DIR/lib/skill-dir.sh"
 seed "$SRC/templates/night-guard-settings.json" "$CLAUDE_DIR/night-guard-settings.json"
 
 # ---------- 3. routing hook ----------
-if [ "$WITH_HOOK" = 1 ]; then
+if [ "$PLUGIN_MODE" -eq 0 ] && [ "$WITH_HOOK" = 1 ]; then
   step "Installing the routing hook (UserPromptSubmit)"
   put "$SRC/hooks/skill-router.py" "$CLAUDE_DIR/hooks/skill-router.py"
   [ "$DRY" -eq 1 ] || chmod +x "$CLAUDE_DIR/hooks/skill-router.py"
@@ -168,12 +183,27 @@ if [ "$WITH_HOOK" = 1 ]; then
       say "register hook in $SETTINGS  (backup: settings.json.bak-$STAMP)"
     fi
   fi
+elif [ "$PLUGIN_MODE" -eq 1 ]; then
+  step "Routing hook"
+  say "skip    the plugin registers it itself (hooks/hooks.json)"
+  if [ -f "$CLAUDE_DIR/settings.json" ] && jq -e \
+    '[.hooks.UserPromptSubmit[]?.hooks[]? | select(.command|test("skill-router"))] | length > 0' \
+    "$CLAUDE_DIR/settings.json" >/dev/null 2>&1; then
+    say "WARN    a clone-install routing hook is still registered in settings.json - the plugin"
+    say "WARN    registers its own; remove the old one with ./uninstall.sh or delete the entry"
+  fi
+fi
+
+# ---------- skill dir: resolved after step 1, which is what creates it on a clone install ----------
+if ! SKILL_DIR="$(sl_skill_dir)"; then
+  if [ "$DRY" -eq 1 ]; then SKILL_DIR="$SRC/skills/self-learn"   # a dry run installed nothing to find
+  else echo "cannot locate the self-learn skill directory" >&2; exit 1; fi
 fi
 
 # ---------- 4. private store ----------
 step "Initializing the private store at $SL_HOME"
 if [ "$DRY" -eq 0 ]; then
-  SELF_LEARN_HOME="$SL_HOME" bash "$CLAUDE_DIR/skills/self-learn/scripts/state.sh" status >/dev/null
+  SELF_LEARN_HOME="$SL_HOME" bash "$SKILL_DIR/scripts/state.sh" status >/dev/null
 fi
 put  "$SRC/templates/nightly-run.sh"     "$SL_HOME/scripts/nightly-run.sh"
 [ "$DRY" -eq 1 ] || chmod +x "$SL_HOME/scripts/nightly-run.sh"
@@ -193,7 +223,7 @@ for r in "${ROOTS[@]}"; do
   [ -d "$r" ] || say "WARN $r does not exist - create it before the first run; the nightly job refuses to start without its workspace"
 done
 if [ "$DRY" -eq 1 ]; then say "[dry-run] discover.sh ${ROOTS[*]}"; else
-  SELF_LEARN_HOME="$SL_HOME" bash "$CLAUDE_DIR/skills/self-learn/scripts/discover.sh" "${ROOTS[@]}" | sed 's/^/  /'
+  SELF_LEARN_HOME="$SL_HOME" bash "$SKILL_DIR/scripts/discover.sh" "${ROOTS[@]}" | sed 's/^/  /'
   apply_repo_toggles
 fi
 
@@ -238,7 +268,7 @@ if [ -n "$STORE_REMOTE" ]; then
   current="$(git -C "$SL_HOME" remote get-url origin 2>/dev/null || true)"
   if [ "$current" = "$STORE_REMOTE" ]; then say "keep    store already tracks $STORE_REMOTE"
   elif [ "$DRY" -eq 1 ]; then say "[dry-run] sync.sh init $STORE_REMOTE"
-  else SELF_LEARN_HOME="$SL_HOME" bash "$CLAUDE_DIR/skills/self-learn/scripts/sync.sh" init "$STORE_REMOTE" | sed 's/^/  /'; fi
+  else SELF_LEARN_HOME="$SL_HOME" bash "$SKILL_DIR/scripts/sync.sh" init "$STORE_REMOTE" | sed 's/^/  /'; fi
 fi
 
 # ---------- 8. VS Code companions ----------
@@ -254,18 +284,4 @@ if [ "$VSCODE_LAUNCHER" = 1 ] || [ "$VSCODE_GRAPHIFY" = 1 ]; then
 fi
 
 # ---------- done ----------
-step "Done"
-cat <<EOF
-  Config:   $SL_HOME/config.json   (re-run the questions: $0 --wizard)
-  Skills:   $CLAUDE_DIR/skills/{self-learn,model-balance,loop-contract}
-  Store:    $SL_HOME   (epoch $(jq -r .epoch "$SL_HOME/state.json" 2>/dev/null || echo 0), $(jq -r '[.repos[] | select(.enabled)] | length' "$SL_HOME/registry.json" 2>/dev/null || echo 0) repos studied)
-  Hook:     $([ "$WITH_HOOK" = 1 ] && echo "$CLAUDE_DIR/hooks/skill-router.py" || echo "skipped")
-  Nightly:  $([ "$SCHEDULE" = 1 ] && echo "scheduled at $SCHED_TIME" || echo "not scheduled (re-run with --schedule)")
-  VS Code:  claude-launcher=$(yn_default "$VSCODE_LAUNCHER") graphify-watch=$(yn_default "$VSCODE_GRAPHIFY")
-
-  Next:
-    1. In any project:   claude  ->  /self-learn status      (where am I?)
-    2. First real pass:  /self-learn                          (propose only - nothing is edited)
-    3. Apply what you like:  /self-learn apply
-    4. New project later:    it joins on the next run; or right away: skills/self-learn/scripts/register.sh <path>
-EOF
+install_summary

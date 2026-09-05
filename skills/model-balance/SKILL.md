@@ -22,10 +22,15 @@ personal folders. Read-only except for the config edits you apply under the hybr
 
 ## Procedure
 
+SKILL DIR: resolve once - `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/model-balance` if it exists,
+else the newest match of `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/cache/*/kaizen/*/skills/model-balance`.
+Every `<skill-dir>/…` path below means that directory. The skill is `/model-balance` on a
+standalone install and `/kaizen:model-balance` under the plugin - same skill.
+
 ### 1. Collect (one read-only command)
 
 ```
-bash ~/.claude/skills/model-balance/scripts/collect-stats.sh
+bash <skill-dir>/scripts/collect-stats.sh
 ```
 
 Gives: spend distribution by model (weekly + all-time, cost-equiv from `ccusage`), the explicit
@@ -72,7 +77,7 @@ haiku handles - high-confidence downgrades. `self-learn` on the strongest tier i
 
 ### 5. Write the digest
 
-Write `~/.claude/skills/model-balance/journal/<date>.md`: the spend snapshot, applied changes
+Write `<skill-dir>/journal/<date>.md`: the spend snapshot, applied changes
 (with backup paths + est. saving), deferred candidates as `- [ ]` checkboxes for the user to
 approve, and one line of "what next run should watch." When run as a self-learn phase, fold these
 into the self-learn journal instead of a separate file.

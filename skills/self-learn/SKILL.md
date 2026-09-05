@@ -88,9 +88,14 @@ registry is the project list; it lives in your private store and updates automat
 - `--repos r1,r2` -> also analyze these registered repos (default: current repo only)
 - `rollback <id> <version>` -> restore an item from its snapshot and exit
 
-All scripts live in `scripts/` next to this file: `~/.claude/skills/self-learn/scripts`.
-They are plain bash + `jq`; PR mining additionally needs the GitHub CLI (`gh`). Make them
-executable on first run: `chmod +x ~/.claude/skills/self-learn/scripts/*.sh`.
+All scripts live in `scripts/` next to this file: resolve once - `$SELF_LEARN_SKILL_DIR` if set,
+else `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/self-learn` if it exists, else the newest match of
+`${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/cache/*/kaizen/*/skills/self-learn` - giving
+`<skill-dir>/scripts`. Invoke this
+skill as `/self-learn` on a standalone install and `/kaizen:self-learn` under the plugin - same
+skill. They are plain bash + `jq`; PR mining additionally needs the GitHub CLI (`gh`). Make them
+executable on first run: `chmod +x <skill-dir>/scripts/*.sh` (the plugin cache already ships them
+executable).
 
 ---
 
@@ -379,7 +384,7 @@ its rule is provably ENCODED in a named skill/agent *version* (cite it).
 
 ## Phase 2.8 - Model & effort routing audit (optional, needs the `model-balance` skill)
 
-If `~/.claude/skills/model-balance/SKILL.md` is installed, run its collector and classify
+If `<skill-dir>/../model-balance/SKILL.md` is installed, run its collector and classify
 every routing site (`--model` flags in job/skill scripts, skill-frontmatter `model:`/`effort:`
 pins, workflow `agent()` choices) against its rubric. Rebalance the two dials (intelligence +
 effort) toward the cheapest tier that holds quality. Same hybrid apply boundary as Phase 2.7:
@@ -472,7 +477,10 @@ For each approved proposal, in this order:
    own `scripts/` and reference it from its SKILL.md (write-once, save every future run).
 4. After writing skill edits to `~/.claude/skills/`, run `/reload-skills` to hot-reload the
    edited skills into the current session (context is preserved). Agent edits still require
-   the agent to be re-spawned; only skill SKILL.md changes hot-reload.
+   the agent to be re-spawned; only skill SKILL.md changes hot-reload. When a kaizen skill is
+   delivered by the plugin it lives in `~/.claude/plugins/cache/…`, which `/plugin update`
+   overwrites: record such an edit in the journal as an upstream change and never write it into
+   the plugin cache.
 
 In `propose` mode, stop before step 1-2 and present the diffs for the user to approve.
 
