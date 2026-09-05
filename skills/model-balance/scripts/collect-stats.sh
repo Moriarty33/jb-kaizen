@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # model-balance: gather model/effort usage + config-routing sites into one report.
 # READ-ONLY. Scope: ~/.claude + your workspace only (never personal folders).
-# Add more job dirs to scan for --model flags via MODEL_BALANCE_EXTRA_DIRS="dir1 dir2".
+# Add more job dirs to scan for model-flag sites via MODEL_BALANCE_EXTRA_DIRS="dir1 dir2".
 # Usage: collect-stats.sh            -> human-readable report to stdout
 #        collect-stats.sh --json OUT -> also write machine JSON to OUT
 set -uo pipefail
@@ -47,19 +47,23 @@ echo
 echo "## 3. Explicit model-routing sites (LIVE only; snapshots excluded)"
 # Kaizen's own plugin-cache skills too (not every third-party plugin's).
 kaizen_dirs=()
-if [ -f "$C/lib/skill-dir.sh" ]; then
-  . "$C/lib/skill-dir.sh"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$C/lib/skill-dir.sh" ]; then . "$C/lib/skill-dir.sh"
+elif [ -f "$DIR/../../../lib/skill-dir.sh" ]; then . "$DIR/../../../lib/skill-dir.sh"
+fi
+if command -v sl_kaizen_skill_dirs >/dev/null 2>&1; then
   while IFS= read -r d; do kaizen_dirs+=("$d"); done < <(sl_kaizen_skill_dirs)
 fi
 grep -rnE --include='*.sh' --exclude-dir=logs --exclude-dir=backups --exclude-dir=snapshots -e '--model[[:space:]=]+[a-z0-9-]+' \
   "$C/self-learn" "$C/lib" "$C/skills" \
   ${kaizen_dirs[@]+"${kaizen_dirs[@]}"} ${MODEL_BALANCE_EXTRA_DIRS:-} 2>/dev/null \
-  | grep -vE '\.bak' | sed -E 's#^'"$HOME"'/#  ~/#' | head -40
+  | grep -vE '\.bak' | sed -E 's#^'"$C"'/#  <config>/#; s#^'"$HOME"'/#  ~/#' | head -40
 
 echo
 echo "## 4. Skill frontmatter model/effort pins"
-grep -rnE '^(model|effort|reasoning|reasoningEffort):' "$C/skills"/*/SKILL.md 2>/dev/null \
-  | sed -E 's#^'"$HOME"'/#  ~/#' | head -40
+grep -rnE '^(model|effort|reasoning|reasoningEffort):' "$C/skills"/*/SKILL.md \
+  ${kaizen_dirs[@]+"${kaizen_dirs[@]/%//SKILL.md}"} 2>/dev/null \
+  | sed -E 's#^'"$C"'/#  <config>/#; s#^'"$HOME"'/#  ~/#' | head -40
 echo "  (agents/*.md declare NO model:/effort: - they inherit the invocation model; recommendations for them target the invocation site or add explicit frontmatter.)"
 
 echo
@@ -79,5 +83,7 @@ if [ -n "$JSON_OUT" ]; then
     | {weekPeriod:$wk.period,
        weekByModel:[$wk.modelBreakdowns[]|{model:.modelName,cost:((.cost*100|round)/100),pctCost:((.cost/$WC*1000|round)/10)}]|sort_by(-.cost),
        allTimeByModel:[$all[]|{model:.model,cost:((.cost*100|round)/100),pctCost:((.cost/$C*1000|round)/10)}]|sort_by(-.cost)}' \
-    > "$JSON_OUT" 2>/dev/null && echo "wrote $JSON_OUT"
+    > "$JSON_OUT.tmp" 2>/dev/null && [ -s "$JSON_OUT.tmp" ] && mv "$JSON_OUT.tmp" "$JSON_OUT" && echo "wrote $JSON_OUT" \
+      || { rm -f "$JSON_OUT.tmp"; echo "  (ccusage unavailable - no JSON written)"; }
 fi
+exit 0

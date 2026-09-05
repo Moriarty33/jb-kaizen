@@ -18,7 +18,7 @@ set -uo pipefail
 export HOME="${HOME:-$(cd ~ && pwd)}"
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
-SL_HOME="${SELF_LEARN_HOME:-$HOME/.claude/self-learn}"
+SL_HOME="${SELF_LEARN_HOME:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/self-learn}"
 WORKSPACE="${SELF_LEARN_WORKSPACE:-$HOME/workspace}"
 MODEL="${SELF_LEARN_MODEL:-opus}"
 BUDGET="${SELF_LEARN_BUDGET_USD:-40}"
@@ -47,15 +47,16 @@ cd "$WORKSPACE" 2>/dev/null || { echo "FATAL: workspace $WORKSPACE missing - abo
     . "$_c/lib/skill-dir.sh"
     if _sd="$(sl_skill_dir)"; then export SELF_LEARN_SKILL_DIR="$_sd"; fi
   fi
-  # File-access scope: trust only the workspace (cwd) + ~/.claude, and hard-deny personal
+  # File-access scope: trust only the workspace (cwd) + the Claude config dir
+  # ($CLAUDE_CONFIG_DIR, default ~/.claude), and hard-deny personal
   # folders via night-guard-settings.json so no access prompt ever fires.
   # --max-budget-usd is the one hard spend ceiling that survives ultracode-mode fan-out.
   claude_retry "$(cat "$PROMPT_FILE")" \
     --model "$MODEL" \
     --permission-mode auto \
     --max-budget-usd "$BUDGET" \
-    --add-dir "$HOME/.claude" \
-    --settings "$HOME/.claude/night-guard-settings.json" \
+    --add-dir "$_c" \
+    --settings "$_c/night-guard-settings.json" \
     --output-format text
   rc=$?
   echo "=== self-learn nightly END: $(date) (exit $rc) ==="

@@ -15,6 +15,10 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          node-version: 20
       - name: Tool versions
         run: |
           bash --version | head -1
@@ -23,9 +27,35 @@ jobs:
           git --version
       - name: Syntax
         run: |
-          for f in install.sh uninstall.sh lib/*.sh templates/*.sh skills/*/scripts/*.sh tests/*.sh vscode/*.sh; do bash -n "$f"; done
+          for f in install.sh uninstall.sh bootstrap.sh lib/*.sh templates/*.sh skills/*/scripts/*.sh tests/*.sh vscode/*.sh; do bash -n "$f"; done
           python3 -m py_compile hooks/skill-router.py docs/diagrams/*.py
           for f in templates/*.json; do jq -e . "$f" >/dev/null; done
+      - name: Plugin and marketplace manifests
+        run: |
+          v="$(cat VERSION)"
+          jq -e --arg v "$v" '.name=="kaizen" and .version==$v' .claude-plugin/plugin.json >/dev/null
+          jq -e --arg v "$v" '.name=="jb-kaizen" and .version==$v and (.plugins|length==1)
+            and .plugins[0].name=="kaizen" and .plugins[0].source=="./"
+            and .plugins[0].version==$v' .claude-plugin/marketplace.json >/dev/null
+          jq -e '.hooks.UserPromptSubmit[0].hooks[0].command|test("CLAUDE_PLUGIN_ROOT")' \
+            hooks/hooks.json >/dev/null
+          test -f skills/setup/SKILL.md
+      - name: claude plugin validate
+        if: matrix.os == 'ubuntu-latest'
+        timeout-minutes: 5
+        run: |
+          npm i -g @anthropic-ai/claude-code >/dev/null 2>&1 || {
+            echo "claude CLI unavailable in CI - manifest validation skipped"; exit 0; }
+          out="$(claude plugin validate . </dev/null 2>&1)" || {
+            printf '%s\n' "$out"
+            case "$out" in
+              *"not authenticated"*|*"Not authenticated"*|*"Invalid API key"*|*"ANTHROPIC_API_KEY"*|\
+              *"claude login"*|*"credentials"*)
+                echo "claude plugin validate needs auth in CI - skipped"; exit 0 ;;
+            esac
+            exit 1; }
+          printf '%s\n' "$out"
+          printf '%s\n' "$out" | grep -q 'Validation passed'
       - name: Diagrams are generated from their sources
         run: |
           python3 docs/diagrams/build.py

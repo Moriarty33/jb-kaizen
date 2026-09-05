@@ -28,6 +28,23 @@ check python3 -m py_compile "$ROOT/hooks/skill-router.py"
 check jq -e . "$ROOT/templates/routing-map.json"
 check jq -e . "$ROOT/templates/night-guard-settings.json"
 
+# ---- 0b. plugin manifests, hooks.json, setup skill, bootstrap syntax ----
+VER="$(cat "$ROOT/VERSION")"; for m in .claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json; do check jq -e . "$ROOT/$m"; done
+check jq -e --arg v "$VER" '.name=="kaizen" and .version==$v' "$ROOT/.claude-plugin/plugin.json"
+MKT="$ROOT/.claude-plugin/marketplace.json"
+check jq -e --arg v "$VER" '.name=="jb-kaizen"' "$MKT"
+check jq -e '.owner.name|length>0' "$MKT"
+check jq -e --arg v "$VER" '.version==$v' "$MKT"
+check jq -e '.plugins|length==1' "$MKT"
+check jq -e '.plugins[0].name=="kaizen"' "$MKT"
+check jq -e '.plugins[0].source=="./"' "$MKT"
+check jq -e --arg v "$VER" '.plugins[0].version==$v' "$MKT"
+HK="$ROOT/hooks/hooks.json"
+check jq -e '.hooks.UserPromptSubmit[0].hooks[0].type=="command"' "$HK"
+check jq -e '.hooks.UserPromptSubmit[0].hooks[0].command|test("CLAUDE_PLUGIN_ROOT")' "$HK"
+check jq -e '.hooks.UserPromptSubmit[0].hooks[0].command|test("hooks/skill-router[.]py")' "$HK"
+check test -f "$ROOT/skills/setup/SKILL.md"; check grep -q -- '--plugin --yes' "$ROOT/skills/setup/SKILL.md"; check bash -n "$ROOT/bootstrap.sh"; check test -x "$ROOT/bootstrap.sh"
+
 # ---- 1. synthetic workspace: two repos, one with two branches ----
 WS="$HOME/workspace"; mkdir -p "$WS"
 for r in alpha beta; do
@@ -44,9 +61,14 @@ echo '{"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"echo 
 # ---- 2. install (twice: second must be a no-op) ----
 check bash "$ROOT/install.sh" --workspace "$WS" --no-hook --dry-run
 check bash "$ROOT/install.sh" --workspace "$WS"
-for p in skills/self-learn/SKILL.md skills/self-learn/scripts/paginate.sh skills/model-balance/SKILL.md skills/loop-contract/SKILL.md lib/claude-retry.sh hooks/skill-router.py night-guard-settings.json; do
-  check test -f "$CLAUDE_CONFIG_DIR/$p"
-done
+check test -f "$CLAUDE_CONFIG_DIR/skills/self-learn/SKILL.md"
+check test -f "$CLAUDE_CONFIG_DIR/skills/self-learn/scripts/paginate.sh"
+check test -f "$CLAUDE_CONFIG_DIR/skills/model-balance/SKILL.md"
+check test -f "$CLAUDE_CONFIG_DIR/skills/loop-contract/SKILL.md"
+check test -f "$CLAUDE_CONFIG_DIR/lib/claude-retry.sh"
+check test -f "$CLAUDE_CONFIG_DIR/hooks/skill-router.py"
+check test -f "$CLAUDE_CONFIG_DIR/night-guard-settings.json"
+check test ! -d "$CLAUDE_CONFIG_DIR/skills/setup"       # plugin-only: it needs CLAUDE_PLUGIN_ROOT
 for p in state.json registry.json pagination.json versions.json scripts/nightly-run.sh nightly-prompt.txt routing/routing-map.json routing/intent-lexicon.md .gitignore; do
   check test -f "$SELF_LEARN_HOME/$p"
 done
@@ -121,6 +143,9 @@ mkdir -p "$HOME/other/gamma"; gitc -C "$HOME/other/gamma" init -q -b main
 echo 1 > "$HOME/other/gamma/f"; gitc -C "$HOME/other/gamma" add .; gitc -C "$HOME/other/gamma" commit -qm gamma
 mkdir -p "$T/sl-roots"; printf '{"roots":["%s"],"repos":{}}\n' "$HOME/other" > "$T/sl-roots/registry.json"
 check grep -q "under \[$HOME/other\], 1 newly registered" <<<"$(SELF_LEARN_HOME="$T/sl-roots" bash "$S/discover.sh")"
+
+# ---- 2e-2i. plugin mode, sl_skill_dir resolution, bootstrap.sh, plugin-cache inventory/snapshot/model-balance ----
+. "$ROOT/tests/plugin-checks.sh"
 
 # ---- 3. state / paginate / advance (two-phase cursors, cross-branch dedup) ----
 check bash "$S/state.sh" status
