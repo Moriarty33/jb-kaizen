@@ -27,7 +27,7 @@ cover it" - they don't, for this case.
 
 ## Applying to the audit checklist
 
-When `/loop-contract` checks "Per-run budget ceiling (tokens / $ / sub-agents) present" for a
+When `/loop-audit` checks "Per-run budget ceiling (tokens / $ / sub-agents) present" for a
 scheduled job (self-learn or any other unattended job), grep the job's
 invocation for `--max-budget-usd` and any of the three env vars above. Absence of
 `--max-budget-usd` on an ultracode-mode loop is a P0 finding, not a P2 - the concurrency cap

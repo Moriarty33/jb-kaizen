@@ -10,7 +10,7 @@ install_summary() {
   step "Done"
   cat <<EOF
   Config:   $SL_HOME/config.json   (re-run the questions: $0 --wizard)
-  Skills:   $([ "$PLUGIN_MODE" -eq 1 ] && echo "$SKILL_DIR  (delivered by the plugin)" || echo "$CLAUDE_DIR/skills/{self-learn,model-balance,loop-contract}")
+  Skills:   $([ "$PLUGIN_MODE" -eq 1 ] && echo "$SKILL_DIR  (delivered by the plugin)" || echo "$CLAUDE_DIR/skills/{self-learn,model-balance,loop-audit}")
   Store:    $SL_HOME   (epoch $(jq -r .epoch "$SL_HOME/state.json" 2>/dev/null || echo 0), $(jq -r '[.repos[] | select(.enabled)] | length' "$SL_HOME/registry.json" 2>/dev/null || echo 0) repos studied)
   Hook:     $(if [ "$PLUGIN_MODE" -eq 1 ]; then echo "delivered by the plugin"; elif [ "$WITH_HOOK" = 1 ]; then echo "$CLAUDE_DIR/hooks/skill-router.py"; else echo "skipped"; fi)
   Nightly:  $([ "$SCHEDULE" = 1 ] && echo "scheduled at $SCHED_TIME" || echo "not scheduled (re-run with --schedule)")

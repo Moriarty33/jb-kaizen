@@ -14,7 +14,7 @@
 # Exit codes: 0 = a turn completed; 124 = every attempt timed out; 77 = auth failure
 # (not retried - a token will not heal in 30s); other = the last claude exit code.
 #
-# Output markers (grep-able from the job log; loop-contract style status vocabulary):
+# Output markers (grep-able from the job log; loop-audit style status vocabulary):
 #   RETRY-WRAPPER: OK after N attempt(s)
 #   RETRY-WRAPPER: timeout - attempt i/N killed after Ts (hung/runaway turn)
 #   RETRY-WRAPPER: failure (rc=..., timeout=0|1, attempt i/N, auth=0|1) - retrying in Ss

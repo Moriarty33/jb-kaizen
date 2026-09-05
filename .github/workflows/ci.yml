@@ -37,12 +37,12 @@ jobs:
         run: |
           v="$(cat VERSION)"
           jq -e --arg v "$v" '.name=="kaizen" and .version==$v' .claude-plugin/plugin.json >/dev/null
-          jq -e --arg v "$v" '.name=="jb-kaizen" and .version==$v and (.plugins|length==1)
+          jq -e --arg v "$v" '.name=="jb-kaizen" and (.plugins|length==1)
             and .plugins[0].name=="kaizen" and .plugins[0].source=="./"
             and .plugins[0].version==$v' .claude-plugin/marketplace.json >/dev/null
           jq -e '.hooks.UserPromptSubmit[0].hooks[0].command|test("CLAUDE_PLUGIN_ROOT")' \
             hooks/hooks.json >/dev/null
-          test -f skills/setup/SKILL.md
+          test -f skills/kaizen-setup/SKILL.md
       - name: claude plugin validate
         if: matrix.os == 'ubuntu-latest'
         timeout-minutes: 5

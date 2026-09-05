@@ -140,7 +140,7 @@ else
   step "Installing skills into $CLAUDE_DIR/skills"
   for sk in "$SRC"/skills/*/; do
     name="$(basename "$sk")"
-    if [ "$name" = setup ]; then continue; fi   # plugin-only: needs ${CLAUDE_PLUGIN_ROOT}
+    if [ "$name" = kaizen-setup ]; then continue; fi   # plugin-only: needs ${CLAUDE_PLUGIN_ROOT}
     dest="$CLAUDE_DIR/skills/$name"
     while IFS= read -r f; do
       rel="${f#"$sk"}"
@@ -150,6 +150,9 @@ else
       esac
     done < <(find "$sk" -type f | sort)
     [ "$DRY" -eq 1 ] || chmod +x "$dest"/scripts/*.sh 2>/dev/null || true
+  done
+  for old in loop-contract setup; do   # renamed in 1.1.1 - drop the stale copies
+    [ -d "$CLAUDE_DIR/skills/$old" ] && { run rm -rf "$CLAUDE_DIR/skills/$old"; say "removed $CLAUDE_DIR/skills/$old (renamed)"; } || true
   done
 fi
 
@@ -209,6 +212,13 @@ put  "$SRC/templates/nightly-run.sh"     "$SL_HOME/scripts/nightly-run.sh"
 [ "$DRY" -eq 1 ] || chmod +x "$SL_HOME/scripts/nightly-run.sh"
 seed "$SRC/templates/nightly-prompt.txt" "$SL_HOME/nightly-prompt.txt"
 seed "$SRC/templates/routing-map.json"   "$SL_HOME/routing/routing-map.json"
+if [ "$DRY" -eq 0 ] && [ -f "$SL_HOME/routing/routing-map.json" ] && grep -q loop-contract "$SL_HOME/routing/routing-map.json"; then
+  map_tmp="$(mktemp)"
+  sed 's/loop-contract/loop-audit/g' "$SL_HOME/routing/routing-map.json" > "$map_tmp"
+  if jq -e . "$map_tmp" >/dev/null 2>&1; then mv "$map_tmp" "$SL_HOME/routing/routing-map.json"; say "migrated $SL_HOME/routing/routing-map.json (loop-contract -> loop-audit)"
+  else rm -f "$map_tmp"; say "WARN    could not migrate $SL_HOME/routing/routing-map.json - left as-is"
+  fi
+fi
 seed "$SRC/templates/intent-lexicon.md"  "$SL_HOME/routing/intent-lexicon.md"
 if [ "$DRY" -eq 0 ]; then
   mkdir -p "$SL_HOME/logs"

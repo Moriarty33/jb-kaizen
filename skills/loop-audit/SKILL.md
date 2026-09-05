@@ -1,11 +1,21 @@
 ---
-name: loop-contract
-description: Design or audit an unattended / scheduled agent loop before you trust it to run without you watching. Pins down its 6-part contract (TRIGGER, SCOPE, ACTION, BUDGET, STOP, REPORT) and proves it cannot run away via three guardrails (iteration cap, no-progress detection, budget ceiling). Use when setting up a cron/launchd job or /loop, when a scheduled job spun without finishing or burned tokens for nothing, or when the user says "audit my nightly jobs", "is this loop safe to leave running", "harden the scheduled agents", "перевір нічні джоби". Diagnoses only - never edits job scripts unless asked. Invoke with /loop-contract [job-or-script].
+name: loop-audit
+description: >
+  Designs or audits an unattended / scheduled agent loop before it is trusted to run
+  unwatched. Pins down its 6-part contract (TRIGGER, SCOPE, ACTION, BUDGET, STOP, REPORT)
+  and proves it cannot run away via three guardrails (iteration cap, no-progress detection,
+  budget ceiling). Use when setting up a cron/launchd job or /loop, when a scheduled job spun
+  without finishing or burned tokens for nothing, or when the user says "audit my nightly
+  jobs", "is this loop safe to leave running", "harden the scheduled agents". Diagnoses
+  only - never edits job scripts unless asked. Invoke with /loop-audit on a standalone install
+  and /kaizen:loop-audit under the plugin. Also triggers on Ukrainian phrasings:
+  "перевір нічні джоби".
 argument-hint: "[job name | script path]  (no arg = audit all known scheduled jobs)"
 allowed-tools: Read, Bash, Grep, Glob
+compatibility: Designed for Claude Code
 ---
 
-# loop-contract - make an unattended loop provably safe before you walk away
+# loop-audit - make an unattended loop provably safe before you walk away
 
 A loop that runs while you sleep needs more than a cron line. Before you `/schedule` or
 `/loop` anything, pin down its contract and prove it cannot spin forever, burn budget, or
@@ -44,10 +54,10 @@ Each run should emit an explicit terminal status, not just "it ran":
 marker, not a raw exit code. (The bundled `lib/claude-retry.sh` emits `RETRY-WRAPPER:` lines in
 this vocabulary; new loops should emit the same so one digest can classify every job.)
 
-## Background-session autopush (v2.1.212+)
+## Background-session autopush (since Claude Code 2.1.212)
 
-Since 2.1.212, a "background session" (as opposed to headless `claude -p` print-mode) commits
-and pushes by default to preserve work, opening a draft PR only when the task calls for one.
+Since Claude Code 2.1.212, a "background session" (as opposed to headless `claude -p` print-mode)
+commits and pushes by default to preserve work, opening a draft PR only when the task calls for one.
 A loop that spawns background sessions inherits this default even if the loop's own contract
 never mentions git. Verify per job:
 
@@ -79,8 +89,8 @@ For each scheduled / looping job, confirm:
 - [ ] Emits an explicit terminal status marker the REPORT reads
 - [ ] Skip-permissions / destructive flags only inside an isolated worktree or container
 - [ ] State persisted so a crash resumes from the last checkpoint, not from scratch
-- [ ] If the job can spawn a v2.1.212+ "background session" (`/bg`, backgrounded `claude
-      agents`, background `/fork`) rather than headless `claude -p`, confirm its autopush
+- [ ] If the job can spawn a 2.1.212-or-newer "background session" (`/bg`, backgrounded
+      `claude agents`, background `/fork`) rather than headless `claude -p`, confirm its autopush
       behavior is accounted for - either the job only ever runs headless (no autopush), or any
       push it makes is scoped and expected, not a silent side effect
 

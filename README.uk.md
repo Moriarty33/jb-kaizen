@@ -68,17 +68,18 @@ Memory проєкту - найдорожчий вхід: `MEMORY.md` ванта�
 Опційно: `gh` (авторизований) для PR-рев'ю, `npx ccusage` для фази балансу моделей.
 
 Усі три шляхи ставлять ті самі сім питань як єдиний крок налаштування: термінальний майстер для
-клонування/bootstrap (Enter лишає дефолт) і `/kaizen:setup` для плагіна, де у `Bash`-виклику скіла немає TTY.
+клонування/bootstrap (Enter лишає дефолт) і `/kaizen:kaizen-setup` для плагіна, де у `Bash`-виклику скіла немає TTY.
 
 ### 1. Плагін (рекомендовано)
 
 ```
 /plugin marketplace add Moriarty33/jb-kaizen
 /plugin install kaizen@jb-kaizen
-/kaizen:setup
+/kaizen:kaizen-setup
 ```
 
-Скіли стають `/kaizen:self-learn`, `/kaizen:model-balance`, `/kaizen:loop-contract` і `/kaizen:setup`,
+Скіли стають `/kaizen:self-learn`, `/kaizen:model-balance`, `/kaizen:loop-audit` і
+`/kaizen:kaizen-setup`,
 а хук роутингу приходить разом із плагіном - без правок `settings.json`.
 
 ### 2. Одна команда
@@ -141,7 +142,7 @@ claude
 | `~/.claude/plugins/cache/<marketplace>/kaizen/<version>/` | **плагінне встановлення**: скіли, `hooks/hooks.json`, `install.sh`, `uninstall.sh` - замість рядків `~/.claude/skills/*` нижче. `lib/skill-dir.sh` резолвить найновішу закешовану версію за mtime теки, а не за номером версії, тож старий залишок після `/plugin update` ніколи не переможе |
 | `~/.claude/skills/self-learn/` | шлях клонування/bootstrap: двигун - `SKILL.md`, 14 bash-скриптів, довідники (workflow, роутинг-рубрика, learned patterns) |
 | `~/.claude/skills/model-balance/` | шлях клонування/bootstrap: аудит моделі × зусилля з даних `ccusage` (фаза 2.8, опційно) |
-| `~/.claude/skills/loop-contract/` | шлях клонування/bootstrap: контракт із 6 частин + три запобіжники для будь-якого автономного циклу |
+| `~/.claude/skills/loop-audit/` | шлях клонування/bootstrap: контракт із 6 частин + три запобіжники для будь-якого автономного циклу |
 | `~/.claude/hooks/skill-router.py` | шлях клонування/bootstrap: хук `UserPromptSubmit`, один рядок підказки, коли збігається вивчена фраза; інакше тиша - плагін приносить цей хук сам, див. рядок вище |
 | `~/.claude/lib/claude-retry.sh` | обмежені ретраї, бюджет часу, kill усієї process group, стоп на auth-помилці |
 | `~/.claude/lib/skill-dir.sh` | резолвить теку скіла на диску для обох варіантів - клонування/bootstrap і плагіна; підключається нічним раннером і скриптами скілів |

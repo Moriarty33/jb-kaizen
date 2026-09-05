@@ -83,7 +83,7 @@ Requirements: [Claude Code](https://docs.claude.com/en/docs/claude-code) (CLI on
 Optional: GitHub CLI `gh` (authenticated) for PR-review mining, `npx ccusage` for the model-balance phase.
 
 All three paths ask the same seven questions as their single configuration step: the terminal wizard
-for clone and bootstrap (Enter keeps the default), `/kaizen:setup` for the plugin, where a skill's
+for clone and bootstrap (Enter keeps the default), `/kaizen:kaizen-setup` for the plugin, where a skill's
 `Bash` call has no TTY.
 
 ### 1. Plugin (recommended)
@@ -91,11 +91,11 @@ for clone and bootstrap (Enter keeps the default), `/kaizen:setup` for the plugi
 ```
 /plugin marketplace add Moriarty33/jb-kaizen
 /plugin install kaizen@jb-kaizen
-/kaizen:setup
+/kaizen:kaizen-setup
 ```
 
-The skills become `/kaizen:self-learn`, `/kaizen:model-balance`, `/kaizen:loop-contract` and
-`/kaizen:setup`, and the routing hook comes with the plugin - no `settings.json` edit.
+The skills become `/kaizen:self-learn`, `/kaizen:model-balance`, `/kaizen:loop-audit` and
+`/kaizen:kaizen-setup`, and the routing hook comes with the plugin - no `settings.json` edit.
 
 ### 2. One command
 
@@ -161,7 +161,7 @@ Plugin install: drop the nightly job first - `ROOT="$(ls -td "${CLAUDE_CONFIG_DI
 | `~/.claude/plugins/cache/<marketplace>/kaizen/<version>/` | **plugin install**: skills, `hooks/hooks.json`, `install.sh`, `uninstall.sh` - present instead of the `~/.claude/skills/*` rows below. `lib/skill-dir.sh` resolves the newest cached version by directory mtime, not by version number, so an old `/plugin update` leftover never wins |
 | `~/.claude/skills/self-learn/` | clone/bootstrap path: the engine - `SKILL.md`, 14 bash scripts, references (workflow script, routing rubric, learned patterns) |
 | `~/.claude/skills/model-balance/` | clone/bootstrap path: model × effort routing audit from `ccusage` data (Phase 2.8, optional) |
-| `~/.claude/skills/loop-contract/` | clone/bootstrap path: design/audit any unattended loop - 6-part contract + three runaway guardrails |
+| `~/.claude/skills/loop-audit/` | clone/bootstrap path: design/audit any unattended loop - 6-part contract + three runaway guardrails |
 | `~/.claude/hooks/skill-router.py` | clone/bootstrap path: `UserPromptSubmit` hook, one-line nudge toward a skill when your learned phrasings match, silent otherwise - the plugin delivers this hook itself, see the row above |
 | `~/.claude/lib/claude-retry.sh` | bounded retries, wall-clock budget, process-group kill, auth-fail short-circuit |
 | `~/.claude/lib/skill-dir.sh` | resolves the on-disk skill dir for both the clone/bootstrap and plugin layouts; sourced by the nightly runner and the skill scripts |

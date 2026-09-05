@@ -12,7 +12,7 @@ def components(theme):
     c.card(240, 84, 290, 44, ("lib/claude-retry.sh",), accent="violet", mono=True, size=12)
     c.card(240, 158, 290, 64, ("skills/self-learn", "SKILL.md · scripts/ · references/"), accent="violet", mono=True, size=12)
     c.card(240, 252, 142, 44, ("skills/model-balance",), accent="violet", mono=True, size=11)
-    c.card(388, 252, 142, 44, ("skills/loop-contract",), accent="violet", mono=True, size=11)
+    c.card(388, 252, 142, 44, ("skills/loop-audit",), accent="violet", mono=True, size=11)
     c.card(240, 326, 290, 44, ("hooks/skill-router.py",), accent="violet", mono=True, size=12)
     c.card(240, 400, 290, 44, ("settings.json", "hooks.UserPromptSubmit → skill-router.py"), accent="violet", mono=True, size=12)
     c.card(240, 460, 290, 44, ("night-guard-settings.json", "deny-list for the nightly run"), accent="violet", mono=True, size=12)

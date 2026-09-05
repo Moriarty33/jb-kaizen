@@ -28,13 +28,13 @@ check python3 -m py_compile "$ROOT/hooks/skill-router.py"
 check jq -e . "$ROOT/templates/routing-map.json"
 check jq -e . "$ROOT/templates/night-guard-settings.json"
 
-# ---- 0b. plugin manifests, hooks.json, setup skill, bootstrap syntax ----
+# ---- 0b. plugin manifests, hooks.json, kaizen-setup skill, bootstrap syntax ----
 VER="$(cat "$ROOT/VERSION")"; for m in .claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json; do check jq -e . "$ROOT/$m"; done
-check jq -e --arg v "$VER" '.name=="kaizen" and .version==$v' "$ROOT/.claude-plugin/plugin.json"
+check jq -e --arg v "$VER" '.name=="kaizen" and .version==$v and (.repository|length>0)' "$ROOT/.claude-plugin/plugin.json"
 MKT="$ROOT/.claude-plugin/marketplace.json"
 check jq -e --arg v "$VER" '.name=="jb-kaizen"' "$MKT"
 check jq -e '.owner.name|length>0' "$MKT"
-check jq -e --arg v "$VER" '.version==$v' "$MKT"
+check jq -e 'has("version")|not' "$MKT"          # the plugin entry owns the version; a root copy drifts
 check jq -e '.plugins|length==1' "$MKT"
 check jq -e '.plugins[0].name=="kaizen"' "$MKT"
 check jq -e '.plugins[0].source=="./"' "$MKT"
@@ -43,7 +43,10 @@ HK="$ROOT/hooks/hooks.json"
 check jq -e '.hooks.UserPromptSubmit[0].hooks[0].type=="command"' "$HK"
 check jq -e '.hooks.UserPromptSubmit[0].hooks[0].command|test("CLAUDE_PLUGIN_ROOT")' "$HK"
 check jq -e '.hooks.UserPromptSubmit[0].hooks[0].command|test("hooks/skill-router[.]py")' "$HK"
-check test -f "$ROOT/skills/setup/SKILL.md"; check grep -q -- '--plugin --yes' "$ROOT/skills/setup/SKILL.md"; check bash -n "$ROOT/bootstrap.sh"; check test -x "$ROOT/bootstrap.sh"
+# every skill's frontmatter name must equal its directory (the spec requires it; renames break it silently)
+skill_name_matches_dir() { for d in "$ROOT"/skills/*/; do n="$(basename "$d")"; grep -qx "name: $n" "$d/SKILL.md" || return 1; done; }
+check skill_name_matches_dir
+check test -f "$ROOT/skills/kaizen-setup/SKILL.md"; check grep -q -- '--plugin --yes' "$ROOT/skills/kaizen-setup/SKILL.md"; check bash -n "$ROOT/bootstrap.sh"; check test -x "$ROOT/bootstrap.sh"
 
 # ---- 1. synthetic workspace: two repos, one with two branches ----
 WS="$HOME/workspace"; mkdir -p "$WS"
@@ -64,11 +67,14 @@ check bash "$ROOT/install.sh" --workspace "$WS"
 check test -f "$CLAUDE_CONFIG_DIR/skills/self-learn/SKILL.md"
 check test -f "$CLAUDE_CONFIG_DIR/skills/self-learn/scripts/paginate.sh"
 check test -f "$CLAUDE_CONFIG_DIR/skills/model-balance/SKILL.md"
-check test -f "$CLAUDE_CONFIG_DIR/skills/loop-contract/SKILL.md"
+check test -f "$CLAUDE_CONFIG_DIR/skills/loop-audit/SKILL.md"
+mkdir -p "$CLAUDE_CONFIG_DIR/skills/loop-contract"
+check bash "$ROOT/install.sh" --workspace "$WS"
+check test ! -d "$CLAUDE_CONFIG_DIR/skills/loop-contract"
 check test -f "$CLAUDE_CONFIG_DIR/lib/claude-retry.sh"
 check test -f "$CLAUDE_CONFIG_DIR/hooks/skill-router.py"
 check test -f "$CLAUDE_CONFIG_DIR/night-guard-settings.json"
-check test ! -d "$CLAUDE_CONFIG_DIR/skills/setup"       # plugin-only: it needs CLAUDE_PLUGIN_ROOT
+check test ! -d "$CLAUDE_CONFIG_DIR/skills/kaizen-setup"  # plugin-only: it needs CLAUDE_PLUGIN_ROOT
 for p in state.json registry.json pagination.json versions.json scripts/nightly-run.sh nightly-prompt.txt routing/routing-map.json routing/intent-lexicon.md .gitignore; do
   check test -f "$SELF_LEARN_HOME/$p"
 done
@@ -79,6 +85,15 @@ check bash "$ROOT/install.sh" --workspace "$WS"
 after="$(find "$CLAUDE_CONFIG_DIR" -name '*.bak-*' | wc -l | tr -d ' ')"
 check test "$before" = "$after"   # idempotent: no new backups on an unchanged re-install
 check test "$(jq '[.hooks.UserPromptSubmit[].hooks[].command | select(test("skill-router"))] | length' "$CLAUDE_CONFIG_DIR/settings.json")" = "1"
+
+# ---- 2a. routing map migration: a stale loop-contract entry is renamed on re-install ----
+RM="$SELF_LEARN_HOME/routing/routing-map.json"
+cp "$RM" "$RM.seeded"                      # section 6 needs the real map back
+echo '{"loop-contract":{"triggers":["x"]}}' > "$RM"
+check bash "$ROOT/install.sh" --workspace "$WS"
+check grep -q loop-audit "$RM"
+check test "$(grep -c loop-contract "$RM")" = "0"
+mv "$RM.seeded" "$RM"
 
 S="$CLAUDE_CONFIG_DIR/skills/self-learn/scripts"
 
@@ -253,7 +268,9 @@ check grep -q 'remote already up to date' <<<"$(bash "$S/sync.sh")"
 # ---- 9. nightly-run refuses a missing workspace; uninstall cleans up ----
 r="$(SELF_LEARN_WORKSPACE="$T/nope" bash "$SELF_LEARN_HOME/scripts/nightly-run.sh" || true)"
 check grep -q 'workspace' "$(ls -t "$SELF_LEARN_HOME"/logs/nightly-*.log | head -1)"
+mkdir -p "$CLAUDE_CONFIG_DIR/skills/loop-contract"
 check bash "$ROOT/uninstall.sh"
+check test ! -d "$CLAUDE_CONFIG_DIR/skills/loop-contract"
 check test ! -d "$CLAUDE_CONFIG_DIR/skills/self-learn"
 check test -d "$SELF_LEARN_HOME"
 check jq -e '[.hooks.UserPromptSubmit[].hooks[].command] == ["echo other"]' "$CLAUDE_CONFIG_DIR/settings.json"

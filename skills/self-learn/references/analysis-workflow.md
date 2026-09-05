@@ -151,7 +151,7 @@ preferring a verifier's `correction` text over the original proposal when one wa
 > snapshotting. Reject anything whose rationale admits "no evidence of rework", or that
 > references a field/path you cannot verify exists.
 
-## Phase-4 budget ceiling (HARD - loop-contract guardrail)
+## Phase-4 budget ceiling (HARD - loop-audit guardrail)
 
 **Never launch more than 45 agents in one Phase 4** (propose + verify combined). The script
 above enforces it with a counter; count before you launch anyway. If the candidate list would

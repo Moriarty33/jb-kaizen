@@ -1,8 +1,9 @@
 ---
 name: self-learn
-description: Self-improvement engine for your Claude Code setup. Reads where it left off (per-branch commit cursor + session cursor in persistent state), ingests the next batch of unprocessed git commits oldest-to-newest, recent session transcripts, PR review comments and per-project memories, then runs a multi-agent propose-and-verify analysis to refine your agents and skills for token/cycle/time efficiency with no quality trade-off - versioning and snapshotting every change. Use this whenever the user wants to "self-learn", "evolve the setup", "improve my agents/skills from recent work", "learn from the last sessions/commits", run a retrospective that actually edits the tooling, or types /self-learn. Resumable - each run continues from the last processed commit/session, never reprocessing the same history.
+description: Self-improvement engine for a Claude Code setup. Reads where it left off (per-branch commit cursor + session cursor in persistent state), ingests the next batch of unprocessed git commits oldest-to-newest, recent session transcripts, PR review comments and per-project memories, then runs a multi-agent propose-and-verify analysis to refine your agents and skills for token/cycle/time efficiency with no quality trade-off - versioning and snapshotting every change. Use this whenever the user wants to "self-learn", "evolve the setup", "improve my agents/skills from recent work", "learn from the last sessions/commits", run a retrospective that actually edits the tooling, or types /self-learn. Resumable - each run continues from the last processed commit/session, never reprocessing the same history.
 argument-hint: [apply | propose | --batch N | --repos r1,r2 | status | rollback <id> <version>]
-allowed-tools: Read, Edit, Write, Grep, Glob, Bash, AskUserQuestion, Agent, Workflow, Task, TaskCreate, TaskUpdate, TaskList
+allowed-tools: Read, Edit, Write, Grep, Glob, Bash, AskUserQuestion, Agent, Workflow
+compatibility: Requires git, jq, bash, and the GitHub CLI for PR mining
 ---
 
 # self-learn - resumable self-improvement engine
@@ -224,9 +225,9 @@ Session transcripts are the highest-signal input. Read selectively (`Read offset
 - multi-step sequences the model reinvented each time (candidate bundled script)
 - token/time sinks: re-reading files, redundant searches, oversized outputs
 
-Pass 1 goes quiet once a setup matures (in one long-running deployment it returned zero
-agent-behaviour defects for 25 consecutive runs). Run it, but do not expect it to carry the
-run, and never manufacture a finding to make it productive.
+Pass 1 goes quiet once a setup matures - it can return no agent-behaviour defect for many
+consecutive runs. Run it, but do not expect it to carry the run, and never manufacture a
+finding to make it productive.
 
 **Pass 2 - mechanical tool-call failures.** This is the load-bearing pass over a mature
 setup. Grep the corpus for failures the model *worked around silently*, then join each
@@ -256,42 +257,8 @@ header, but its `wf_*` workflow children are written as it goes. If you run othe
 Claude jobs, add their opening-prompt markers via `SELF_LEARN_ENGINE_MARKERS` so their
 transcripts are excluded too.
 
-Why the script exists (do not re-derive these):
-
-- **`find`, never a one-level glob.** Subagent and workflow-agent transcripts live *nested* under
-  `<session-id>/subagents/...`, and that is where agent tool-failures actually happen. A shallow
-  `~/.claude/projects/*/*.jsonl` glob silently hides ~90% of the corpus (measured: 328 files vs
-  3,569 for `find`). `**/*.jsonl` works in zsh but needs `shopt -s globstar` in bash - prefer `find`.
-- **Exclude engine runs by SESSION ID AS A PATH COMPONENT** (`<id>.jsonl` *and* `<id>/**`), never by
-  sniffing a file's header. Only the top-level file carries the header; its nested children carry
-  none, and those children are exactly where prior analysis agents echo every literal you grep for.
-  A header filter leaves ~60% of a "clean" corpus contaminated.
-- **No GNU-isms on macOS** (BSD userland, bash 3.2): no `xargs -a`, `mapfile`, `timeout`, or
-  `declare -A`. `xargs -a` is the dangerous one - BSD xargs rejects it, grep then scans ZERO files,
-  and the pipeline still exits 0, so the load-bearing pass fails open.
-
-Three judgement rules the script cannot make for you:
-
-- **If every high-yield literal returns zero, suspect the pipeline, not the corpus** - confirm with a
-  direct `grep -c` on one known transcript before believing any zero. A *single* zero is weaker
-  still: before reading it as absence, run a **positive control** - a literal of the same class that
-  MUST hit - and grep the **encoding the artefact actually uses**, not the prose you expect
-  (e.g. a loaded `CLAUDE.md` ships as `{"attachment":{"type":"nested_memory",...}}`, not as
-  `Contents of .../CLAUDE.md`). A zero measures your literal until a positive control proves it
-  measures the fact.
-- **Count the block EVENT, not the message text.** Any transcript that read or drafted a hook
-  script carries its block message verbatim, so filter to `is_error` results containing
-  `PreToolUse:Bash hook error` (the `is_error` filter is load-bearing). Likewise, if a class's
-  distinct top-level-session count is < 1/3 of its file count it is still subagent-inflated -
-  report sessions, not files. And a share of the class is not a disproportion: divide by the
-  population that could have produced it (for a Bash-guard class, the transcripts matching
-  `"name":"Bash"`) before blaming one agent kind.
-- **Date the class before proposing - the Pass-2 corpus is ALL-TIME, not an epoch window**
-  (`--since` filters file *mtime*, not event date). Newest event:
-  `xargs grep -hF '<literal>' < /tmp/sl-corpus.txt | grep -o '"timestamp":"[0-9-]*' | sort -u | tail -1`.
-  If it predates the carrier change that **addresses this class** - a named line you confirmed is in
-  the file now and absent from the prior `snapshots/<id>/<version>`; a `versions.json` bump alone is
-  not evidence - the class is **CLOSED, not open**.
+The three traps the script encodes and the three judgement calls it cannot make for you are
+in `references/corpus-forensics.md` - read it before trusting any Pass-2 count.
 
 Count distinct **commands**, not matching error lines - counting lines turns a 30-day cross-tool
 defect into a one-day incident. A failure whose `is_error` is *false* is the most valuable kind:
@@ -345,42 +312,8 @@ cursor (`pagination.json -> memory[<dir>]`) means unchanged memories are **not r
 every run - only new/changed files and the index need work. `indexed:false` flags an orphan
 (file with no `MEMORY.md` line, or a stale line whose file is gone).
 
-For each **changed/new memory with `class: feedback`** (whatever its filename), run the
-distill-or-retire test:
-- Identify the single skill/agent that *should* enforce the rule (e.g. a "PR review must be a
-  pending review" memory -> `global:skill:review-pr`). Grep that target before concluding anything.
-- **ENCODED** (target already enforces it): the memory is now redundant - mark it `archive`.
-- **PARTIAL / MISSING**: emit a **learning** for Phase 4/5 - a minimal edit that makes the skill/agent enforce the rule. Once that edit lands (snapshot-first), the memory becomes redundant -> `archive` with a pointer to the new version.
-- **CROSS_CUTTING** (applies to many skills, not one): its home is the global `CLAUDE.md`, not a single skill. Encode once there, then `pointer`.
-
-A feedback memory is a *bug report against the skills* - either the skill learns the rule, or
-the memory proves the skill already knows it. Either way the memory stops being needed
-verbatim. **When every memory in a store names the same skill, that is not a memory problem -
-it is an unencoded skill, and the store is doing the skill's job at global context cost.**
-
-For each memory with **`class: project`**, judge lifecycle: if the linked work shipped (PR
-**MERGED**, ticket **Done**, or the entry itself says merged/deployed/shipped) it is an
-**archive** candidate; genuinely active work stays in the index. Do not guess - when a status
-is unclear, keep it and note it in the journal.
-
-**Compaction** (reversible, snapshot-first):
-```bash
-BK=$(bash scripts/memory.sh backup <dir>)   # full copy of the memory dir FIRST
-```
-Then: `mkdir -p <dir>/archive`; move each archived file into `<dir>/archive/`;
-replace its `MEMORY.md` line with a one-line pointer (`- Title -> archived (encoded in <id> v<x>)`)
-or drop the line entirely for shipped work; fix orphans (add a pointer or archive the file);
-dedupe overlapping `reference_*` entries; rewrite `MEMORY.md` lean. **Never delete** - archive +
-pointer only. Preserve every active-work and durable `reference_`/`user_` entry. Finally:
-```bash
-bash scripts/memory.sh advance <dir>         # move the memory cursor forward
-```
-
-**Apply boundary (hybrid).** Auto-apply, snapshot-first: (a) high-confidence feedback->skill
-gap-fills, and (b) the reversible compaction above. **Defer to the journal** (do not auto-apply):
-skill *restructures*, archival of a `project` memory whose status you could not confirm, and any
-edit touching many skills at once. Evidence discipline: a feedback memory is only archived when
-its rule is provably ENCODED in a named skill/agent *version* (cite it).
+The distill-or-retire test, the `project`-class lifecycle rules, the compaction procedure and
+the apply boundary are in `references/memory-distillation.md` - read it when this phase runs.
 
 ## Phase 2.8 - Model & effort routing audit (optional, needs the `model-balance` skill)
 

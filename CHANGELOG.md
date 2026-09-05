@@ -3,6 +3,37 @@
 All notable changes to this extension are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.1.1] - 2026-09-05
+
+### Changed
+- **BREAKING**: the `setup` skill is now `kaizen-setup` - `/kaizen:kaizen-setup` under the plugin
+  (the skill is plugin-only; clone and bootstrap installs use the terminal wizard). The old bare
+  `/setup` was generic enough to collide with a user's own skill and to trigger on unrelated prompts.
+- **BREAKING**: the `loop-contract` skill is now `loop-audit` - `/kaizen:loop-audit`. No script or
+  cross-skill reference depended on the old name; only typed invocations change.
+- Skill frontmatter conventions: `compatibility` on every skill, `model: sonnet` on `model-balance`,
+  `allowed-tools` and `argument-hint` on the Maestro skill, and third-person opening clauses in the
+  descriptions.
+- One multilingual policy across the skills: English triggers first, then a closing
+  "Also triggers on Ukrainian phrasings" clause.
+- `kaizen-setup` asks its seven questions in the language the user is writing in, instead of a
+  hardcoded one.
+- `self-learn` SKILL.md split under the 500-line guidance: Pass-2 corpus forensics moved to
+  `references/corpus-forensics.md` and the Phase 2.7 rules to `references/memory-distillation.md`.
+- `self-learn` `allowed-tools` drops the `Task*` entries that resolve to nothing.
+
+### Added
+- `repository` in `.claude-plugin/plugin.json`.
+
+### Removed
+- The root-level `version` in `.claude-plugin/marketplace.json`, which duplicated the plugin
+  version and could drift from it.
+
+### Upgrade notes
+- After `/plugin update`, use `/kaizen:kaizen-setup` and `/kaizen:loop-audit`. On a clone or
+  bootstrap install, `install.sh` prunes the renamed skill directories (`loop-contract`, `setup`)
+  and migrates an existing routing map from `loop-contract` to `loop-audit` automatically.
+
 ## [1.1.0] - 2026-09-05
 
 ### Added

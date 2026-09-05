@@ -16,7 +16,7 @@ Two install modes deliver the same engine:
   CI check. `skills/` and `hooks/hooks.json` are auto-discovered by Claude Code from the plugin root -
   no registration step. The hook command in `hooks/hooks.json` runs
   `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/skill-router.py"`, so it resolves against wherever the plugin
-  cache placed this version rather than a fixed path. First-run configuration is the `/kaizen:setup`
+  cache placed this version rather than a fixed path. First-run configuration is the `/kaizen:kaizen-setup`
   skill: a non-interactive wizard, needed because a skill's `Bash` call has no TTY for the terminal one.
 - **Clone / bootstrap** - `git clone` + `./install.sh`, or the one-line `bootstrap.sh` that does the
   same and opens the wizard, copy the skills under `~/.claude/skills/*` and register the hook in

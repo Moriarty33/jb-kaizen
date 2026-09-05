@@ -1,10 +1,11 @@
 ---
-name: setup
-description: Configure JB Kaizen after `/plugin install kaizen@jb-kaizen` - the model is the wizard, since a skill's Bash call has no TTY for the interactive one. Asks the same seven questions the terminal wizard asks, then runs one non-interactive install. Use on first install, for "/kaizen:setup", or to reconfigure - "change the nightly time", "change my workspace roots", "point the store at a remote", "add/remove a repository", "toggle the routing hook", "install/remove the VS Code companions". Invoke with /kaizen:setup.
+name: kaizen-setup
+description: Configures JB Kaizen after `/plugin install kaizen@jb-kaizen` - the model is the wizard, since a skill's Bash call has no TTY for the interactive one. Asks the same seven questions the terminal wizard asks, then runs one non-interactive install. Use on first install or to reconfigure - "change the nightly time", "change my workspace roots", "point the store at a remote", "add/remove a repository", "toggle the routing hook", "install/remove the VS Code companions". Invoke with `/kaizen:kaizen-setup`; plugin installs only - the clone and bootstrap paths configure through the terminal wizard instead.
 allowed-tools: Bash, AskUserQuestion
+compatibility: Designed for Claude Code
 ---
 
-# setup - JB Kaizen, configured by the model instead of the terminal wizard
+# kaizen-setup - JB Kaizen, configured by the model instead of the terminal wizard
 
 `install.sh` normally asks seven questions itself when run interactively (`[ -t 0 ]`). A Bash
 call made by Claude from inside a skill has **no TTY**: forcing the interactive wizard
@@ -19,9 +20,9 @@ every answer passed as a flag.
 
 ## 1. Ask the seven questions
 
-One `AskUserQuestion` call, all seven questions together, defaults pre-selected. Question text
-in Ukrainian per the user's global instructions (this skill's own body stays English). The
-seven, with the meaning to show the user for each (mirrors `extension/README.md`'s step table):
+One `AskUserQuestion` call, all seven questions together, defaults pre-selected. Ask in the
+language the user is writing in. The seven, with the meaning to show the user for each
+(mirrors `extension/README.md`'s step table):
 
 | # | Question | Means |
 |---|----------|-------|
@@ -112,5 +113,5 @@ the saved config, and nothing destructive happens on a repeat run.
 
 Every answer is saved to `~/.claude/self-learn/config.json` (path resolved through
 `CLAUDE_CONFIG_DIR` the same way as everywhere else). To change one thing later - the nightly
-time, the workspace roots, the private remote - re-run `/kaizen:setup` and answer only that
+time, the workspace roots, the private remote - re-run `/kaizen:kaizen-setup` and answer only that
 question differently; every other answer is carried forward from the saved config.

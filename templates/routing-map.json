@@ -31,8 +31,8 @@
       ]
     },
     {
-      "skill": "loop-contract",
-      "hint": "Audit an unattended / scheduled loop before trusting it -> /loop-contract.",
+      "skill": "loop-audit",
+      "hint": "Audit an unattended / scheduled loop before trusting it -> /loop-audit.",
       "keywords": [
         "audit my nightly",
         "nightly jobs",

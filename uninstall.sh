@@ -36,7 +36,7 @@ case "$(uname -s)" in
 esac
 
 echo "==> Skills"
-for s in self-learn model-balance loop-contract; do
+for s in self-learn model-balance loop-audit loop-contract setup; do   # last two: pre-1.1.1 names
   [ -d "$CLAUDE_DIR/skills/$s" ] && { run rm -rf "$CLAUDE_DIR/skills/$s"; say "removed $CLAUDE_DIR/skills/$s"; }
 done
 
