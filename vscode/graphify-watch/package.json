@@ -1,0 +1,122 @@
+{
+  "name": "graphify-watch",
+  "displayName": "Graphify Watch",
+  "description": "Native VS Code file watching that triggers one-shot graphify update rebuilds, with live state in the status bar (graphifyy 0.8.36).",
+  "version": "0.3.1",
+  "publisher": "local",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Moriarty33/jb-kaizen.git",
+    "directory": "vscode/graphify-watch"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "graphifyWatch.start",
+        "title": "Graphify Watch: Start",
+        "icon": "$(play)"
+      },
+      {
+        "command": "graphifyWatch.stop",
+        "title": "Graphify Watch: Stop",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "graphifyWatch.restart",
+        "title": "Graphify Watch: Restart",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "graphifyWatch.rebuildNow",
+        "title": "Graphify Watch: Rebuild Now",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "graphifyWatch.openGraph",
+        "title": "Graphify Watch: Open Graph",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "graphifyWatch.showLog",
+        "title": "Graphify Watch: Show Log",
+        "icon": "$(output)"
+      },
+      {
+        "command": "graphifyWatch.openSettings",
+        "title": "Graphify Watch: Open Settings",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "graphifyWatch.showMenu",
+        "title": "Graphify Watch: Show Menu"
+      }
+    ],
+    "configuration": {
+      "title": "Graphify Watch",
+      "properties": {
+        "graphifyWatch.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Start the watcher automatically for each workspace folder on activation."
+        },
+        "graphifyWatch.autoForceShrinkPercent": {
+          "type": "number",
+          "default": 5,
+          "description": "When a rebuild is refused because the new graph has fewer nodes than graph.json (shrink guard), automatically retry once with --force if the shrink is at most this percent. Set 0 to disable auto-force."
+        },
+        "graphifyWatch.debounce": {
+          "type": "number",
+          "default": 3,
+          "description": "Debounce window in seconds. Changed files are collected and a one-shot `graphify update` runs this many seconds after the last change."
+        },
+        "graphifyWatch.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to a Python interpreter with graphify installed. Leave empty to auto-resolve."
+        },
+        "graphifyWatch.outDir": {
+          "type": "string",
+          "default": "graphify-out",
+          "description": "Graphify output directory relative to the workspace folder."
+        },
+        "graphifyWatch.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show notifications for watcher errors and update-needed events."
+        },
+        "graphifyWatch.staleLockSeconds": {
+          "type": "number",
+          "default": 30,
+          "description": "Age in seconds after which another window's .watch.lock is treated as stale."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "npm run lint && node esbuild.js --production",
+    "lint": "tsc --noEmit",
+    "test": "tsx test/parseWatcherLine.test.ts && tsx test/flagDecision.test.ts && tsx test/pathFilter.test.ts && tsx test/runDecision.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.2.0",
+    "esbuild": "^0.24.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}

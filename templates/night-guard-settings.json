@@ -1,0 +1,35 @@
+{
+  "_comment": "Passed to `claude -p --settings` by nightly-run.sh. Hard-denies personal folders so an unattended run can never wander outside ~/.claude and the workspace. Only Read(...) and Edit(...) rules are matched by file-permission checks (Read covers every file-reading tool, Edit every file-editing tool) - Glob/Write rules are silently ignored, so do not use them here.",
+  "permissions": {
+    "deny": [
+      "Read(~/Downloads/**)",
+      "Edit(~/Downloads/**)",
+      "Read(~/Documents/**)",
+      "Edit(~/Documents/**)",
+      "Read(~/Desktop/**)",
+      "Edit(~/Desktop/**)",
+      "Read(~/Pictures/**)",
+      "Edit(~/Pictures/**)",
+      "Read(~/Music/**)",
+      "Edit(~/Music/**)",
+      "Read(~/Movies/**)",
+      "Edit(~/Movies/**)",
+      "Read(~/Videos/**)",
+      "Edit(~/Videos/**)",
+      "Read(~/Library/**)",
+      "Edit(~/Library/**)",
+      "Read(~/Public/**)",
+      "Edit(~/Public/**)",
+      "Read(~/.ssh/**)",
+      "Edit(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Edit(~/.aws/**)",
+      "Read(~/.gnupg/**)",
+      "Edit(~/.gnupg/**)",
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)"
+    ]
+  }
+}

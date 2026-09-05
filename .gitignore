@@ -1,0 +1,6 @@
+*.bak-*
+.DS_Store
+__pycache__/
+vscode/*/node_modules/
+vscode/*/dist/
+docs/assets/diagrams/_preview.html

@@ -1,0 +1,39 @@
+{
+  "name": "claude-launcher",
+  "displayName": "Claude Launcher",
+  "description": "Editor-title button that opens a terminal at the current workspace root and runs claude in auto permission mode.",
+  "version": "1.5.1",
+  "publisher": "local",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Moriarty33/jb-kaizen.git",
+    "directory": "vscode/claude-launcher"
+  },
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "claudeLauncher.run",
+        "title": "Run Claude",
+        "icon": "$(rocket)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "claudeLauncher.run",
+          "group": "navigation@9"
+        }
+      ]
+    }
+  }
+}

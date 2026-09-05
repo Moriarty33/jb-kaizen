@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  smoke:
+    name: smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tool versions
+        run: |
+          bash --version | head -1
+          jq --version
+          python3 --version
+          git --version
+      - name: Syntax
+        run: |
+          for f in install.sh uninstall.sh lib/*.sh templates/*.sh skills/*/scripts/*.sh tests/*.sh vscode/*.sh; do bash -n "$f"; done
+          python3 -m py_compile hooks/skill-router.py docs/diagrams/*.py
+          for f in templates/*.json; do jq -e . "$f" >/dev/null; done
+      - name: Diagrams are generated from their sources
+        run: |
+          python3 docs/diagrams/build.py
+          git diff --exit-code -- docs/assets/diagrams || { echo 'docs/assets/diagrams is out of date: run python3 docs/diagrams/build.py and commit'; exit 1; }
+      - name: Smoke test (install into a throwaway HOME, run every script)
+        run: bash tests/smoke.sh
+      - name: Bundled .vsix matches package.json
+        run: |
+          for e in claude-launcher graphify-watch; do v="$(jq -r .version "vscode/$e/package.json")"; test -f "vscode/$e/$e-$v.vsix" || { echo "missing vscode/$e/$e-$v.vsix"; exit 1; }; done
+      - name: No personal paths or private names leaked
+        run: |
+          ! grep -rnE '/Users/bogda[n]|bogdan\.jaminski|jaminski\.ua' --exclude-dir=.git . || { echo "personal path leaked"; exit 1; }
+
+  vscode:
+    name: vscode companions (graphify-watch lint + unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+        working-directory: vscode/graphify-watch
+      - run: npm run lint && npm test
+        working-directory: vscode/graphify-watch

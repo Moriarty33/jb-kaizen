@@ -1,0 +1,45 @@
+{
+  "version": 2,
+  "note": "Maintained by the self-learn Routing & Intent phase (2.6). keywords are lowercased substrings matched against the user prompt; hint is the one-line nudge injected by ~/.claude/hooks/skill-router.py. Every keyword should cite, in intent-lexicon.md, the session that motivated it. Seeded with the engine's own triggers; self-learn adds YOUR phrasings (any language, plus speech-to-text mishears) as it observes them.",
+  "rules": [
+    {
+      "skill": "self-learn",
+      "hint": "Learn from recent work / evolve the setup -> /self-learn (resumable, snapshot-first, propose by default).",
+      "keywords": [
+        "self-learn",
+        "self learn",
+        "selflearn",
+        "solf learn",
+        "learn from the last sessions",
+        "learn from recent work",
+        "evolve the setup",
+        "improve my skills from",
+        "improve my agents from",
+        "retrospective on the tooling"
+      ]
+    },
+    {
+      "skill": "model-balance",
+      "hint": "Model/effort cost routing -> /model-balance (evidence from ccusage, backup-first edits).",
+      "keywords": [
+        "balance the models",
+        "model balance",
+        "optimize model usage",
+        "which models am i overusing",
+        "save on models",
+        "save cost on models"
+      ]
+    },
+    {
+      "skill": "loop-contract",
+      "hint": "Audit an unattended / scheduled loop before trusting it -> /loop-contract.",
+      "keywords": [
+        "audit my nightly",
+        "nightly jobs",
+        "is this loop safe",
+        "harden the scheduled",
+        "loop contract"
+      ]
+    }
+  ]
+}
