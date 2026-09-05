@@ -6,6 +6,7 @@
 # never run standalone.
 
 install_summary() {
+  local sl; sl="/self-learn"; [ "$PLUGIN_MODE" -eq 1 ] && sl="/kaizen:self-learn"
   step "Done"
   cat <<EOF
   Config:   $SL_HOME/config.json   (re-run the questions: $0 --wizard)
@@ -16,9 +17,9 @@ install_summary() {
   VS Code:  claude-launcher=$(yn_default "$VSCODE_LAUNCHER") graphify-watch=$(yn_default "$VSCODE_GRAPHIFY")
 
   Next:
-    1. In any project:   claude  ->  /self-learn status      (where am I?)
-    2. First real pass:  /self-learn                          (propose only - nothing is edited)
-    3. Apply what you like:  /self-learn apply
+    1. In any project:   claude  ->  $sl status      (where am I?)
+    2. First real pass:  $sl                          (propose only - nothing is edited)
+    3. Apply what you like:  $sl apply
     4. New project later:    it joins on the next run; or right away: $SKILL_DIR/scripts/register.sh <path>
 EOF
 }

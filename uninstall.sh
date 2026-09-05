@@ -60,6 +60,7 @@ fi
 
 echo "==> Runtime"
 [ -f "$CLAUDE_DIR/lib/claude-retry.sh" ] && { run rm -f "$CLAUDE_DIR/lib/claude-retry.sh"; say "removed lib/claude-retry.sh"; }
+[ -f "$CLAUDE_DIR/lib/skill-dir.sh" ] && { run rm -f "$CLAUDE_DIR/lib/skill-dir.sh"; say "removed lib/skill-dir.sh"; }
 [ -f "$CLAUDE_DIR/night-guard-settings.json" ] && { run rm -f "$CLAUDE_DIR/night-guard-settings.json"; say "removed night-guard-settings.json"; }
 
 echo "==> Store"

@@ -5,8 +5,9 @@
 # Usage: collect-stats.sh            -> human-readable report to stdout
 #        collect-stats.sh --json OUT -> also write machine JSON to OUT
 set -uo pipefail
+C="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 JSON_OUT=""
-[ "${1:-}" = "--json" ] && JSON_OUT="${2:-$HOME/.claude/skills/model-balance/stats.json}"
+[ "${1:-}" = "--json" ] && JSON_OUT="${2:-$C/skills/model-balance/stats.json}"
 
 CC="$(npx ccusage@latest weekly --json 2>/dev/null)"
 
@@ -45,26 +46,25 @@ echo
 # and default, which is the one direction this detector must never fail in.
 echo "## 3. Explicit model-routing sites (LIVE only; snapshots excluded)"
 # Kaizen's own plugin-cache skills too (not every third-party plugin's).
-C="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 kaizen_dirs=()
 if [ -f "$C/lib/skill-dir.sh" ]; then
   . "$C/lib/skill-dir.sh"
   while IFS= read -r d; do kaizen_dirs+=("$d"); done < <(sl_kaizen_skill_dirs)
 fi
 grep -rnE --include='*.sh' --exclude-dir=logs --exclude-dir=backups --exclude-dir=snapshots -e '--model[[:space:]=]+[a-z0-9-]+' \
-  "$HOME/.claude/self-learn" "$HOME/.claude/lib" "$HOME/.claude/skills" \
+  "$C/self-learn" "$C/lib" "$C/skills" \
   ${kaizen_dirs[@]+"${kaizen_dirs[@]}"} ${MODEL_BALANCE_EXTRA_DIRS:-} 2>/dev/null \
   | grep -vE '\.bak' | sed -E 's#^'"$HOME"'/#  ~/#' | head -40
 
 echo
 echo "## 4. Skill frontmatter model/effort pins"
-grep -rnE '^(model|effort|reasoning|reasoningEffort):' "$HOME/.claude/skills"/*/SKILL.md 2>/dev/null \
+grep -rnE '^(model|effort|reasoning|reasoningEffort):' "$C/skills"/*/SKILL.md 2>/dev/null \
   | sed -E 's#^'"$HOME"'/#  ~/#' | head -40
 echo "  (agents/*.md declare NO model:/effort: - they inherit the invocation model; recommendations for them target the invocation site or add explicit frontmatter.)"
 
 echo
 echo "## 5. Workflow agent() model/effort choices (aggregate across recent scripts)"
-grep -rhoE "(model|effort): ?'[a-z]+'" "$HOME/.claude/projects"/*/workflows/scripts/*.js 2>/dev/null \
+grep -rhoE "(model|effort): ?'[a-z]+'" "$C/projects"/*/workflows/scripts/*.js 2>/dev/null \
   | tr -d "'" | sort | uniq -c | sort -rn | head -20
 echo "  (counts show which tiers workflows actually pick - imbalance vs the rubric = a rebalance target.)"
 echo

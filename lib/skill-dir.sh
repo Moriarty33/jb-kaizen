@@ -40,11 +40,23 @@ sl_skill_dir() {
   printf '%s\n' "$d"
 }
 
-# sl_kaizen_skill_dirs - print every kaizen plugin-cache skill directory, one per line.
+# sl_kaizen_skill_dirs - print one kaizen plugin-cache directory per skill name, one per line:
+# the NEWEST cached version of each skill (by directory mtime, mirroring sl_skill_dir rule 3),
+# so an old version left behind by `/plugin update` never yields a second row for the same name.
 sl_kaizen_skill_dirs() {
-  local c d; c="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+  local c d n p best seen
+  c="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"; seen=""
   for d in "$c"/plugins/cache/*/kaizen/*/skills/*/; do
-    [ -d "$d" ] || continue; printf '%s\n' "${d%/}"
+    [ -d "$d" ] || continue
+    n="${d%/}"; n="${n##*/}"
+    case " $seen " in *" $n "*) continue ;; esac
+    seen="$seen $n"
+    best=""
+    for p in "$c"/plugins/cache/*/kaizen/*/skills/"$n"/; do
+      [ -d "$p" ] || continue
+      if [ -z "$best" ] || [ "$p" -nt "$best" ]; then best="$p"; fi
+    done
+    [ -n "$best" ] && printf '%s\n' "${best%/}"
   done
 }
 

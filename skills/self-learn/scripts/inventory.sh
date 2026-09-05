@@ -7,7 +7,10 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$DIR/lib.sh"
 sl_init
 C="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-. "$C/lib/skill-dir.sh"
+if [ -f "$C/lib/skill-dir.sh" ]; then . "$C/lib/skill-dir.sh"
+elif [ -f "$DIR/../../../lib/skill-dir.sh" ]; then . "$DIR/../../../lib/skill-dir.sh"
+else sl_kaizen_skill_dirs() { :; }
+fi
 
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 items="[]"
