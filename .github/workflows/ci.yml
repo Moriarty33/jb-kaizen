@@ -30,6 +30,9 @@ jobs:
           for f in install.sh uninstall.sh bootstrap.sh lib/*.sh templates/*.sh skills/*/scripts/*.sh tests/*.sh vscode/*.sh; do bash -n "$f"; done
           python3 -m py_compile hooks/skill-router.py docs/diagrams/*.py
           for f in templates/*.json; do jq -e . "$f" >/dev/null; done
+      - name: Shellcheck
+        if: matrix.os == 'ubuntu-latest'
+        run: shellcheck -S warning tests/*.sh lib/*.sh
       - name: Plugin and marketplace manifests
         run: |
           v="$(cat VERSION)"
@@ -67,7 +70,7 @@ jobs:
           for e in claude-launcher graphify-watch; do v="$(jq -r .version "vscode/$e/package.json")"; test -f "vscode/$e/$e-$v.vsix" || { echo "missing vscode/$e/$e-$v.vsix"; exit 1; }; done
       - name: No personal paths or private names leaked
         run: |
-          ! grep -rnE '/Users/bogda[n]|bogdan\.jaminski|jaminski\.ua' --exclude-dir=.git . || { echo "personal path leaked"; exit 1; }
+          ! grep -rnE '/Users/bogda[n]|bogdan\.jaminski|jaminski\.ua' --exclude-dir=.git --exclude-dir=__pycache__ . || { echo "personal path leaked"; exit 1; }
 
   vscode:
     name: vscode companions (graphify-watch lint + unit tests)

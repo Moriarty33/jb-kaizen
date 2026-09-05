@@ -7,6 +7,34 @@
   <img alt="Components: scheduler, ~/.claude pieces, and the private store" src="../docs/assets/diagrams/components.light.svg" width="1000">
 </picture>
 
+## Plugin layout
+
+Two install modes deliver the same engine:
+
+- **Plugin** - `.claude-plugin/plugin.json` (the plugin itself) and `.claude-plugin/marketplace.json`
+  (the one-plugin marketplace that points at it) are the manifest pair `claude plugin validate` and
+  CI check. `skills/` and `hooks/hooks.json` are auto-discovered by Claude Code from the plugin root -
+  no registration step. The hook command in `hooks/hooks.json` runs
+  `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/skill-router.py"`, so it resolves against wherever the plugin
+  cache placed this version rather than a fixed path. First-run configuration is the `/kaizen:setup`
+  skill: a non-interactive wizard, needed because a skill's `Bash` call has no TTY for the terminal one.
+- **Clone / bootstrap** - `git clone` + `./install.sh`, or the one-line `bootstrap.sh` that does the
+  same and opens the wizard, copy the skills under `~/.claude/skills/*` and register the hook in
+  `~/.claude/settings.json` by hand.
+
+`install.sh --plugin` is the seam between them: it runs the same wizard and writes the same
+`config.json`, but skips the skills copy and the hook registration, because the plugin already
+delivered both - re-doing either would create a duplicate skill tree or a duplicate `skill-router`
+entry in `settings.json`.
+
+Both modes resolve "which skill directory is this?" through the one rule in `lib/skill-dir.sh`
+(`sl_skill_dir`): prefer `$SELF_LEARN_SKILL_DIR` when it is set and is a directory (the `self-learn`
+skill only), then `${CLAUDE_CONFIG_DIR:-~/.claude}/skills/<name>` (the clone/bootstrap path), then the
+newest `${CLAUDE_CONFIG_DIR:-~/.claude}/plugins/cache/*/kaizen/*/skills/<name>` by directory mtime
+(the plugin path, picking the freshest cached version rather than trusting a version string). The
+nightly runner and the skill scripts source this helper instead of hardcoding either path, so the
+same job works unmodified under either install mode.
+
 ## Data model
 
 | File | Owner | Shape |

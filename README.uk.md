@@ -67,6 +67,30 @@ Memory проєкту - найдорожчий вхід: `MEMORY.md` ванта�
 Потрібно: [Claude Code](https://docs.claude.com/en/docs/claude-code) у `PATH`, `git`, `jq`, `python3`.
 Опційно: `gh` (авторизований) для PR-рев'ю, `npx ccusage` для фази балансу моделей.
 
+Усі три шляхи ставлять ті самі сім питань як єдиний крок налаштування: термінальний майстер для
+клонування/bootstrap (Enter лишає дефолт) і `/kaizen:setup` для плагіна, де у `Bash`-виклику скіла немає TTY.
+
+### 1. Плагін (рекомендовано)
+
+```
+/plugin marketplace add Moriarty33/jb-kaizen
+/plugin install kaizen@jb-kaizen
+/kaizen:setup
+```
+
+Скіли стають `/kaizen:self-learn`, `/kaizen:model-balance`, `/kaizen:loop-contract` і `/kaizen:setup`,
+а хук роутингу приходить разом із плагіном - без правок `settings.json`.
+
+### 2. Одна команда
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/main/bootstrap.sh | bash
+```
+
+Клонує або оновлює `~/.jb-kaizen` і відкриває той самий майстер.
+
+### 3. Клонування
+
 ```bash
 git clone https://github.com/Moriarty33/jb-kaizen.git
 cd jb-kaizen
@@ -88,7 +112,8 @@ cd jb-kaizen
 Відповіді зберігаються в `~/.claude/self-learn/config.json`, тож оновлення та інші машини проходять тихо
 (поза терміналом майстер не питає нічого). `./install.sh --wizard` відкриває питання знову; прапорці пропускають
 їх для скриптового встановлення і запам'ятовуються: `--workspace DIRS`, `--schedule [HH:MM]`, `--store-remote URL`,
-`--hook/--no-hook`, `--vscode LIST`, `--yes`.
+`--hook/--no-hook`, `--vscode LIST`, `--plugin`, `--yes`. `--plugin` - для плагінного встановлення, що
+неінтерактивно завершує налаштування: пропускає те, що плагін уже приніс сам (копію скілів, реєстрацію хука).
 
 Спершу спробуйте інтерактивно - у цьому режимі нічого не редагується:
 
@@ -107,16 +132,19 @@ claude
 ```
 
 `./install.sh --help` - усі прапорці; `./uninstall.sh` прибирає все (сховище лишається, якщо не `--purge-store`).
+Плагінне встановлення: спершу зніміть нічну джобу - `ROOT="$(ls -td "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/*/kaizen/*/ | head -1)"; bash "$ROOT/uninstall.sh"` (з `--purge-store` - і сховище), потім `/plugin uninstall kaizen@jb-kaizen`.
 
 ## Що і куди ставиться
 
 | Шлях | Що |
 |------|----|
-| `~/.claude/skills/self-learn/` | двигун: `SKILL.md`, 14 bash-скриптів, довідники (workflow, роутинг-рубрика, learned patterns) |
-| `~/.claude/skills/model-balance/` | аудит моделі × зусилля з даних `ccusage` (фаза 2.8, опційно) |
-| `~/.claude/skills/loop-contract/` | контракт із 6 частин + три запобіжники для будь-якого автономного циклу |
-| `~/.claude/hooks/skill-router.py` | хук `UserPromptSubmit`: один рядок підказки, коли збігається вивчена фраза; інакше тиша |
+| `~/.claude/plugins/cache/<marketplace>/kaizen/<version>/` | **плагінне встановлення**: скіли, `hooks/hooks.json`, `install.sh`, `uninstall.sh` - замість рядків `~/.claude/skills/*` нижче. `lib/skill-dir.sh` резолвить найновішу закешовану версію за mtime теки, а не за номером версії, тож старий залишок після `/plugin update` ніколи не переможе |
+| `~/.claude/skills/self-learn/` | шлях клонування/bootstrap: двигун - `SKILL.md`, 14 bash-скриптів, довідники (workflow, роутинг-рубрика, learned patterns) |
+| `~/.claude/skills/model-balance/` | шлях клонування/bootstrap: аудит моделі × зусилля з даних `ccusage` (фаза 2.8, опційно) |
+| `~/.claude/skills/loop-contract/` | шлях клонування/bootstrap: контракт із 6 частин + три запобіжники для будь-якого автономного циклу |
+| `~/.claude/hooks/skill-router.py` | шлях клонування/bootstrap: хук `UserPromptSubmit`, один рядок підказки, коли збігається вивчена фраза; інакше тиша - плагін приносить цей хук сам, див. рядок вище |
 | `~/.claude/lib/claude-retry.sh` | обмежені ретраї, бюджет часу, kill усієї process group, стоп на auth-помилці |
+| `~/.claude/lib/skill-dir.sh` | резолвить теку скіла на диску для обох варіантів - клонування/bootstrap і плагіна; підключається нічним раннером і скриптами скілів |
 | `~/.claude/night-guard-settings.json` | deny-list для нічного запуску |
 | `~/.claude/self-learn/` | **приватне сховище**: курсори, реєстр, версії, снапшоти, роутинг-мапа, журнал, нічна джоба |
 | `~/.claude/self-learn/config.json` | ваші відповіді майстру: корені, вимкнені репо, хук, розклад, remote, вибір VS Code |
@@ -138,8 +166,8 @@ claude
   Потребує `graphify`; крок 1 майстра ставить його через `uv tool install graphifyy` і додає скіл `/graphify`.
 
 **Нові проєкти** не потребують налаштування: кожен запуск пересканує корені,
-`skills/self-learn/scripts/register.sh <path>` реєструє репо одразу після `git init`, а `./install.sh --wizard`
-вимикає будь-який.
+`scripts/register.sh <path>` з резолвленої теки скіла (див. `lib/skill-dir.sh`) реєструє репо одразу
+після `git init`, а `./install.sh --wizard` вимикає будь-який.
 
 ## Як виглядає одна ніч
 

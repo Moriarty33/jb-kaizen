@@ -82,6 +82,31 @@ loaded verbatim forever.
 Requirements: [Claude Code](https://docs.claude.com/en/docs/claude-code) (CLI on `PATH`), `git`, `jq`, `python3`.
 Optional: GitHub CLI `gh` (authenticated) for PR-review mining, `npx ccusage` for the model-balance phase.
 
+All three paths ask the same seven questions as their single configuration step: the terminal wizard
+for clone and bootstrap (Enter keeps the default), `/kaizen:setup` for the plugin, where a skill's
+`Bash` call has no TTY.
+
+### 1. Plugin (recommended)
+
+```
+/plugin marketplace add Moriarty33/jb-kaizen
+/plugin install kaizen@jb-kaizen
+/kaizen:setup
+```
+
+The skills become `/kaizen:self-learn`, `/kaizen:model-balance`, `/kaizen:loop-contract` and
+`/kaizen:setup`, and the routing hook comes with the plugin - no `settings.json` edit.
+
+### 2. One command
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/main/bootstrap.sh | bash
+```
+
+Clones or updates `~/.jb-kaizen` and opens the same wizard.
+
+### 3. Clone
+
 ```bash
 git clone https://github.com/Moriarty33/jb-kaizen.git
 cd jb-kaizen
@@ -103,9 +128,11 @@ Each step says what it is for before it asks:
 Answers are saved to `~/.claude/self-learn/config.json`, so upgrades and other machines re-run silently
 (outside a terminal it never asks). `./install.sh --wizard` re-opens the questions; flags skip them for scripted
 installs and are remembered: `--workspace DIRS`, `--schedule [HH:MM]`, `--store-remote URL`, `--hook/--no-hook`,
-`--vscode LIST`, `--yes`. The install itself puts three skills, a routing hook, the retry library and a private
-store in place, then registers every git repo under your roots. Re-running is safe: it upgrades in place, backs
-up anything it overwrites, and never touches learned state.
+`--vscode LIST`, `--plugin`, `--yes`. The install itself puts three skills, a routing hook, the retry library and
+a private store in place, then registers every git repo under your roots. Re-running is safe: it upgrades in
+place, backs up anything it overwrites, and never touches learned state. `--plugin` is for a plugin install
+finishing its setup non-interactively: it skips what the plugin already delivers (the skills copy, the hook
+registration).
 
 Try it interactively first - nothing is edited in this mode:
 
@@ -124,16 +151,20 @@ Then let it run while you sleep:
 ```
 
 `./install.sh --help` lists every flag; `./uninstall.sh` removes it all (the store stays unless `--purge-store`).
+Plugin install: drop the nightly job first - `ROOT="$(ls -td "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/*/kaizen/*/ | head -1)"; bash "$ROOT/uninstall.sh"`
+(add `--purge-store` to delete the store too), then `/plugin uninstall kaizen@jb-kaizen`.
 
 ### What gets installed where
 
 | Path | What |
 |------|------|
-| `~/.claude/skills/self-learn/` | the engine: `SKILL.md`, 14 bash scripts, references (workflow script, routing rubric, learned patterns) |
-| `~/.claude/skills/model-balance/` | model × effort routing audit from `ccusage` data (Phase 2.8, optional) |
-| `~/.claude/skills/loop-contract/` | design/audit any unattended loop: 6-part contract + three runaway guardrails |
-| `~/.claude/hooks/skill-router.py` | `UserPromptSubmit` hook: one-line nudge toward a skill when your learned phrasings match, silent otherwise |
+| `~/.claude/plugins/cache/<marketplace>/kaizen/<version>/` | **plugin install**: skills, `hooks/hooks.json`, `install.sh`, `uninstall.sh` - present instead of the `~/.claude/skills/*` rows below. `lib/skill-dir.sh` resolves the newest cached version by directory mtime, not by version number, so an old `/plugin update` leftover never wins |
+| `~/.claude/skills/self-learn/` | clone/bootstrap path: the engine - `SKILL.md`, 14 bash scripts, references (workflow script, routing rubric, learned patterns) |
+| `~/.claude/skills/model-balance/` | clone/bootstrap path: model × effort routing audit from `ccusage` data (Phase 2.8, optional) |
+| `~/.claude/skills/loop-contract/` | clone/bootstrap path: design/audit any unattended loop - 6-part contract + three runaway guardrails |
+| `~/.claude/hooks/skill-router.py` | clone/bootstrap path: `UserPromptSubmit` hook, one-line nudge toward a skill when your learned phrasings match, silent otherwise - the plugin delivers this hook itself, see the row above |
 | `~/.claude/lib/claude-retry.sh` | bounded retries, wall-clock budget, process-group kill, auth-fail short-circuit |
+| `~/.claude/lib/skill-dir.sh` | resolves the on-disk skill dir for both the clone/bootstrap and plugin layouts; sourced by the nightly runner and the skill scripts |
 | `~/.claude/night-guard-settings.json` | deny-list passed to the nightly run |
 | `~/.claude/self-learn/` | **the private store**: cursors, registry, version manifest, snapshots, routing map, journal, nightly job |
 | `~/.claude/self-learn/config.json` | your install answers: roots, skipped repos, hook, schedule, remote, VS Code choices |
@@ -189,8 +220,9 @@ Everything lives in the store, never in your projects.
 | `routing/routing-map.json` | the learned phrasings the hook matches (any language, STT mishears included) |
 | env `SELF_LEARN_HOME` / `SELF_LEARN_ROOTS` | move the store / override discovery roots for one run |
 
-**New projects** need no setup: every run rescans your roots, `skills/self-learn/scripts/register.sh <path>` enrolls
-one the moment you `git init` it, and `./install.sh --wizard` toggles any repo off.
+**New projects** need no setup: every run rescans your roots, the resolved skill directory's
+`scripts/register.sh <path>` (see `lib/skill-dir.sh`) enrolls one the moment you `git init` it, and
+`./install.sh --wizard` toggles any repo off.
 
 ## FAQ
 

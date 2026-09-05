@@ -3,6 +3,36 @@
 All notable changes to this extension are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.1.0] - 2026-09-05
+
+### Added
+- Plugin packaging: `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`.
+- `hooks/hooks.json` delivering the routing hook via `${CLAUDE_PLUGIN_ROOT}` - no `settings.json`
+  edit needed under a plugin install.
+- The `/kaizen:setup` skill: a non-interactive wizard for first install and reconfiguration through
+  the plugin, where a skill's `Bash` call has no TTY for the interactive one.
+- `bootstrap.sh`: one-command clone-or-update path that opens the same wizard.
+- `lib/skill-dir.sh`: the one skill-dir resolution rule, shared by the nightly runner and the
+  skill scripts.
+- `claude plugin validate` in CI.
+
+### Changed
+- `install.sh --plugin`: skips what the plugin already delivers (skills copy, hook registration).
+- The nightly prompt, the nightly runner, and the skill docs resolve the skill directory through
+  `lib/skill-dir.sh` instead of hardcoding `~/.claude/skills/self-learn`.
+- Skills appear as `/kaizen:self-learn`, `/kaizen:model-balance`, `/kaizen:loop-contract` and
+  `/kaizen:setup` under the plugin.
+
+### Upgrade notes
+- `nightly-prompt.txt` and `routing/routing-map.json` are seeded, never overwritten, so existing
+  installs keep their old text as-is. To pick up the new text, move
+  `~/.claude/self-learn/nightly-prompt.txt` (and `routing/routing-map.json`) aside and re-run
+  `install.sh`.
+- A machine that already had a clone install and then installs the plugin ends up with **two**
+  routing-hook registrations - the old `skill-router` entry in `~/.claude/settings.json` is still registered
+  alongside the one the plugin delivers. `install.sh --plugin` warns about this; remove the old one
+  with `./uninstall.sh`, or delete the `skill-router` entry from `~/.claude/settings.json` by hand.
+
 ## [1.0.0] - 2026-09-04
 
 First public release. Extracted from a private setup that ran the engine nightly for
