@@ -10,11 +10,14 @@ JSON_OUT=""
 [ "${1:-}" = "--json" ] && JSON_OUT="${2:-$C/skills/model-balance/stats.json}"
 
 CC="$(npx ccusage@latest weekly --json 2>/dev/null)"
+# A sandbox that denies writes to ~/.npm leaves CC empty; retry once with a writable npm cache.
+[ -n "$CC" ] || CC="$(npm_config_cache="${TMPDIR:-/tmp}/npm-cache" npx --yes ccusage@latest weekly --json 2>/dev/null)"
 
 echo "############ MODEL-BALANCE STATS ############"
 echo
 echo "## 1. Spend distribution by model (ccusage, cost-equiv)"
-echo "$CC" | jq -r '
+# jq -e: plain jq exits 0 on empty input, so without -e the || fallbacks in sections 1-2 never fire.
+echo "$CC" | jq -er '
   ([.weekly[].modelBreakdowns[]] | group_by(.modelName)
     | map({m:.[0].modelName, c:(map(.cost)|add)})) as $all
   | ([.weekly[].totalCost]|add) as $C
@@ -28,14 +31,14 @@ echo "$CC" | jq -r '
 
 echo
 echo "## 2. Top tier vs mid tier this week"
-echo "$CC" | jq -r '
+echo "$CC" | jq -er '
   (.weekly[-1].modelBreakdowns) as $w
   | (($w[]|select(.modelName|test("opus";"i")).cost) // 0) as $o
   | (($w[]|select(.modelName|test("sonnet";"i")).cost) // 0) as $s
   | (($w[]|select(.modelName|test("haiku";"i")).cost) // 0) as $h
   | "  opus $\(($o*100|round)/100)   sonnet $\(($s*100|round)/100)   haiku $\(($h*100|round)/100)"
   + "\n  -> opus on mechanical / well-specified work is the #1 waste; see the rubric."
-' 2>/dev/null
+' 2>/dev/null || echo "  (ccusage unavailable)"
 
 echo
 # No line in THIS file may contain the flag literal this section greps for (header or
