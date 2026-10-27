@@ -72,7 +72,7 @@ sl_find_repos() {
   local root
   for root in "$@"; do
     [ -d "$root" ] || continue
-    find "$root" \( -name node_modules -o -name vendor -o -name .terraform \) -prune -o -name .git -type d -print 2>/dev/null \
+    find "$root" \( -name node_modules -o -name vendor -o -name .terraform \) -prune -o -name .git \( -type d -o -type f \) -print 2>/dev/null \
       | sed 's|/\.git$||' | sort
   done
 }

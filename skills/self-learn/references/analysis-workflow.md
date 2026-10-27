@@ -81,10 +81,11 @@ const learnings = JSON.stringify([/* inline the real array here */])
 const MAX_AGENTS = 45
 const VERIFIERS = 3                       // 2-of-3 majority
 let budget = MAX_AGENTS - candidates.length   // propose agents are spent up front
+let dropped = 0                          // proposals never verified because the cap ran out
 const takeWithinBudget = (proposals) => {
   const out = []
   for (const p of proposals) {
-    if (budget - VERIFIERS < 0) break
+    if (budget - VERIFIERS < 0) { dropped++; continue }
     budget -= VERIFIERS
     out.push(p)
   }
@@ -134,7 +135,7 @@ const confirmed = results
   .filter(Boolean)
   .filter((p) => p.votes.filter((v) => v?.keep).length * 2 > p.votes.length)
 
-return { confirmed, skippedForBudget: Math.max(0, -budget) }
+return { confirmed, skippedForBudget: dropped }
 ```
 
 ## How the main skill uses the result

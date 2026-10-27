@@ -51,7 +51,7 @@ list="$(gh pr list --repo "$nwo" --state all --limit 400 \
 # Which PR numbers to process this run:
 #  - historical: number > cursor, take BATCH (oldest first)
 #  - open with new activity: OPEN and updatedAt > stored openSeen[number]
-historical="$(jq -r --argjson c "$cursor" '[.[] | select(.number > $c)] | sort_by(.number) | .[0:'"$BATCH"'][].number' <<<"$list")"
+historical="$(jq -r --argjson c "$cursor" '[.[] | select(.number > $c and .state != "OPEN")] | sort_by(.number) | .[0:'"$BATCH"'][].number' <<<"$list")"
 opennums="$(jq -r --slurpfile p "$SL_PAGI" --arg k "$REPO_KEY" '
   .[] | select(.state=="OPEN")
   | . as $pr | ($p[0].repos[$k].prs.openSeen[($pr.number|tostring)] // "") as $seen
@@ -120,17 +120,17 @@ for n in $nums; do
   }
 
   fetch_stream "repos/$nwo/pulls/$n/comments" \
-    '[.[] | {kind:"inline", path, line, user:.user.login, bot:(.user.type=="Bot"), body:(.body[0:280])}]' \
+    '[.[] | {kind:"inline", createdAt:.created_at, path, line, user:.user.login, bot:(.user.type=="Bot"), body:(.body[0:2000])}]' \
     || _fail inline "$FS_ERR"
   inline="$FS_OUT"
 
   fetch_stream "repos/$nwo/issues/$n/comments" \
-    '[.[] | {kind:"issue", user:.user.login, bot:(.user.type=="Bot"), body:(.body[0:280])}]' \
+    '[.[] | {kind:"issue", createdAt:.created_at, user:.user.login, bot:(.user.type=="Bot"), body:(.body[0:2000])}]' \
     || _fail issuec "$FS_ERR"
   issuec="$FS_OUT"
 
   fetch_stream "repos/$nwo/pulls/$n/reviews" \
-    '[.[] | select(.state=="CHANGES_REQUESTED" or .state=="APPROVED" or .state=="COMMENTED") | {kind:"verdict", state, user:.user.login, body:(.body[0:280])}]' \
+    '[.[] | select(.state=="CHANGES_REQUESTED" or .state=="APPROVED" or .state=="COMMENTED") | {kind:"verdict", createdAt:.submitted_at, state, user:.user.login, body:(.body[0:2000])}]' \
     || _fail reviews "$FS_ERR"
   reviews="$FS_OUT"
 

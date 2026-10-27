@@ -13,10 +13,29 @@ ID="${1:?usage: snapshot.sh <id> [major|minor|patch]}"
 BUMP="${2:-patch}"
 
 row="$("$DIR/inventory.sh" | jq -c --arg id "$ID" '.[] | select(.id==$id)')"
-[ -z "$row" ] && { echo "unknown id: $ID" >&2; exit 1; }
-path="$(jq -r '.path' <<<"$row")"
-hash="$(jq -r '.hash' <<<"$row")"
-type="$(jq -r '.type' <<<"$row")"
+if [ -n "$row" ]; then
+  path="$(jq -r '.path' <<<"$row")"
+  hash="$(jq -r '.hash' <<<"$row")"
+  type="$(jq -r '.type' <<<"$row")"
+else
+  # Not an inventory item (inventory covers skills/agents only). Config files and store
+  # state are edited more often than either, so accept an explicit path for them rather
+  # than leaving those edits with no snapshot.
+  # known store-owned ids resolve themselves; an explicit $3 / SL_SNAPSHOT_PATH still wins.
+  case "$ID" in
+    global:store:learned-patterns) known="$SL_HOME/learned-patterns.md" ;;
+    global:config:claude-md)       known="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/CLAUDE.md" ;;
+    global:rules:*)                known="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/rules/${ID#global:rules:}.md" ;;
+    *)                             known="" ;;
+  esac
+  path="${3:-${SL_SNAPSHOT_PATH:-$known}}"
+  [ -n "$path" ] && [ -e "$path" ] || {
+    echo "unknown id: $ID (pass a path as \$3 or SL_SNAPSHOT_PATH to snapshot a non-inventory item)" >&2
+    exit 1
+  }
+  if [ -d "$path" ]; then type=skill; else type=file; fi
+  hash="$(sl_hash_path "$path" 2>/dev/null || shasum -a 256 "$path" 2>/dev/null | cut -d" " -f1)"
+fi
 
 cur="$(jq -r --arg id "$ID" '.items[$id].version // "0.0.0"' "$SL_VERS")"
 IFS=. read -r MA MI PA <<<"$cur"
