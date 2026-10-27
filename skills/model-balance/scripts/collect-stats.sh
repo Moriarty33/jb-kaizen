@@ -9,11 +9,18 @@ C="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 JSON_OUT=""
 [ "${1:-}" = "--json" ] && JSON_OUT="${2:-$C/skills/model-balance/stats.json}"
 
-CC="$(npx ccusage@latest weekly --json 2>/dev/null)"
+if command -v npx >/dev/null 2>&1; then
+  CC="$(npx ccusage@latest weekly --json 2>/dev/null)"
+  CC_WHY="ccusage returned no data"
+else
+  CC=""
+  CC_WHY="npx/node not on PATH, so ccusage cannot run"
+fi
 
 echo "############ MODEL-BALANCE STATS ############"
 echo
 echo "## 1. Spend distribution by model (ccusage, cost-equiv)"
+[ -n "$CC" ] || echo "  (NO SPEND DATA - $CC_WHY. This section is BLIND, not zero: do not read an empty section as no spend.)"
 echo "$CC" | jq -r '
   ([.weekly[].modelBreakdowns[]] | group_by(.modelName)
     | map({m:.[0].modelName, c:(map(.cost)|add)})) as $all
@@ -28,6 +35,7 @@ echo "$CC" | jq -r '
 
 echo
 echo "## 2. Top tier vs mid tier this week"
+[ -n "$CC" ] || echo "  (NO SPEND DATA - $CC_WHY. This section is BLIND, not zero: do not read an empty section as no spend.)"
 echo "$CC" | jq -r '
   (.weekly[-1].modelBreakdowns) as $w
   | (($w[]|select(.modelName|test("opus";"i")).cost) // 0) as $o
@@ -67,8 +75,15 @@ grep -rnE '^(model|effort|reasoning|reasoningEffort):' "$C/skills"/*/SKILL.md \
 echo "  (agents/*.md declare NO model:/effort: - they inherit the invocation model; recommendations for them target the invocation site or add explicit frontmatter.)"
 
 echo
+echo "## 4b. Prose model/effort declarations (this setup's real routing surface)"
+grep -rnE '^\*\*(Model preference|Effort)\*\*:' "$C/skills"/*/SKILL.md \
+  ${kaizen_dirs[@]+"${kaizen_dirs[@]/%//SKILL.md}"} 2>/dev/null \
+  | sed -E 's#^'"$C"'/#  <config>/#; s#^'"$HOME"'/#  ~/#' | head -40
+echo "  (skills declare their tier in prose, not frontmatter - section 4 alone under-counts sites.)"
+
+echo
 echo "## 5. Workflow agent() model/effort choices (aggregate across recent scripts)"
-grep -rhoE "(model|effort): ?'[a-z]+'" "$C/projects"/*/workflows/scripts/*.js 2>/dev/null \
+grep -rhoE "(model|effort): ?'[a-z]+'" "$C"/projects/*/*/workflows/scripts/*.js 2>/dev/null \
   | tr -d "'" | sort | uniq -c | sort -rn | head -20
 echo "  (counts show which tiers workflows actually pick - imbalance vs the rubric = a rebalance target.)"
 echo

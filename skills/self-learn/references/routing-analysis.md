@@ -40,11 +40,22 @@ For every processed transcript, look for routing signal:
 
 ## Verify before advancing
 
+> **Resolve the hook, never hardcode `~/.claude/hooks/`.** On a plugin install it ships as
+> `plugins/cache/*/kaizen/*/hooks/skill-router.py`; the `~/.claude/hooks/` path does not exist and the
+> check silently passes over nothing. Resolve it first:
+> ```bash
+> SKILL_ROUTER="$(ls -t "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/hooks/skill-router.py \
+>   "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/*/kaizen/*/hooks/skill-router.py 2>/dev/null | head -1)"
+> ```
+> Likewise the dangling-target audit globs `~/workspace/*/…`; read the roots from
+> `registry.json -> .roots[]` instead, or project-scoped skills read as dangling.
+
+
 After editing `routing-map.json`, sanity-check the hook still parses and behaves:
 
 ```bash
 for p in "learn from the last sessions" "solf learn in a loop" "/self-learn status" "thanks"; do
-  echo "$p ->"; echo "{\"prompt\":\"$p\"}" | python3 ~/.claude/hooks/skill-router.py; echo
+  echo "$p ->"; echo "{\"prompt\":\"$p\"}" | python3 "$SKILL_ROUTER"; echo
 done
 ```
 Expect: self-learn hint, self-learn hint (STT variant), silence (slash), silence (no match).

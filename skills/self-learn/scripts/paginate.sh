@@ -31,6 +31,10 @@ REPO_KEY="$(sl_repo_key "$REPO_ROOT")"
 seenfile="$(mktemp)"
 jq -r --arg k "$REPO_KEY" '.repos[$k].seen // [] | .[]' "$SL_PAGI" > "$seenfile" || true
 
+# Same bot list the PR side uses: global .botLogins plus any per-repo override. The universal
+# CI patterns below mean a fresh install needs no config at all.
+botlogins="$(jq -r --arg k "$REPO_KEY" '((.botLogins // []) + (.repos[$k].config.botLogins // []))[]' "$SL_REGISTRY" 2>/dev/null || true)"
+botcount=0
 branches="$(git -C "$REPO_ROOT" for-each-ref --format='%(refname:short)' refs/heads/)"
 
 total=0
@@ -66,6 +70,19 @@ for br in $branches; do
     H="${meta%%$'\x1f'*}";    rest="${meta#*$'\x1f'}"
     AN="${rest%%$'\x1f'*}";   rest="${rest#*$'\x1f'}"
     AD="${rest%%$'\x1f'*}";   SU="${rest#*$'\x1f'}"
+    # Machine-authored: mark it seen so it is never re-read, count it, keep it out of the batch.
+    _is_bot=0
+    case "$AN" in *'[bot]'*|github-actions*|dependabot*|renovate*|reviewdog*|copilot*) _is_bot=1 ;; esac
+    if [ "$_is_bot" -eq 0 ] && [ -n "$botlogins" ]; then
+      while IFS= read -r _bl; do
+        [ -n "$_bl" ] && [ "$AN" = "$_bl" ] && { _is_bot=1; break; }
+      done <<< "$botlogins"
+    fi
+    if [ "$_is_bot" -eq 1 ]; then
+      botcount=$(( botcount + 1 ))
+      newseen="$(jq --arg h "$H" '. + [$h]' <<<"$newseen")"
+      continue
+    fi
     stat="$(git -C "$REPO_ROOT" show --stat --format='' "$h" | tail -n1 | sed 's/^[[:space:]]*//')"
     commits="$(jq --arg h "$H" --arg an "$AN" --arg ad "$AD" --arg su "$SU" --arg st "$stat" \
       '. + [{hash:$h,author:$an,date:$ad,subject:$su,stat:$st}]' <<<"$commits")"
@@ -82,7 +99,7 @@ for br in $branches; do
 done
 rm -f "$seenfile"
 
-out="$(jq -n --arg k "$REPO_KEY" --argjson b "$batches" --argjson ns "$newseen" --argjson t "$total" \
-  '{repo:$k,totalCommits:$t,batches:$b,newSeen:$ns}')"
+out="$(jq -n --arg k "$REPO_KEY" --argjson b "$batches" --argjson ns "$newseen" --argjson t "$total" --argjson bc "${botcount:-0}" \
+  '{repo:$k,totalCommits:$t,botCommits:$bc,batches:$b,newSeen:$ns}')"
 printf '%s\n' "$out" > "$SL_PENDING_DIR/$(sl_safe_key "$REPO_KEY").json"
 printf '%s\n' "$out"

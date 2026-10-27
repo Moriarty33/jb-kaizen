@@ -430,7 +430,10 @@ bash scripts/state.sh bump-epoch              # increment epoch, stamp the run
 
 ## Phase 6 - Journal + sync
 
-Write `~/.claude/self-learn/journal/<epoch>-<date>.md` summarizing: epoch, commits/sessions
+Write `~/.claude/self-learn/journal/<epoch>-<date>.md` with the Write tool, never a Bash heredoc:
+a PreToolUse Bash guard scans a heredoc body as a command line and a journal quotes commands, so
+the write can be denied after Phase 5 has already moved the cursors. The journal summarizes:
+epoch, commits/sessions
 consumed (ranges + counts), repos touched, items inspected, proposals (applied vs proposed),
 token/cycle savings claimed, and what the **next** run should focus on. This is the
 breadcrumb that makes the next "where am I?" instant. Append a terse dated entry to

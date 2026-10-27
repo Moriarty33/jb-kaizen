@@ -58,10 +58,27 @@ ENGINE_RE='NON-INTERACTIVE RUN CONTRACT|nightly self-learn|<<autonomous-loop'
 [ -n "${SELF_LEARN_ENGINE_MARKERS:-}" ] && ENGINE_RE="$ENGINE_RE|$SELF_LEARN_ENGINE_MARKERS"
 : > "$IDS"
 find "$PROJECTS" -maxdepth 2 -name '*.jsonl' | while IFS= read -r f; do
-  if head -5 "$f" | grep -qE "$ENGINE_RE"; then
+  if [ "$(head -5 "$f" | grep -cE "$ENGINE_RE")" -gt 0 ]; then
     basename "$f" .jsonl >> "$IDS"
   fi
 done
+# 2b. engine WORKFLOW dirs. An engine skill launched MID-SESSION leaves NO engine opening
+#     prompt on its parent session, so step 2 cannot see it - yet every wf_*/agent-*.jsonl
+#     underneath it is engine output and was being mined as user evidence. Covers engine output
+#     written under subagents/workflows/wf_* only; a mid-session engine run that spawns plain
+#     Task subagents (no wf_ dir) is still not caught. Only the workflow dir is dropped; the
+#     parent session's own transcript stays in the corpus.
+WF="$WORK/wf.txt"
+STAGE_RE="$ENGINE_RE|nearestExistingText|Adversarially review this proposed edit"
+: > "$WF"
+find "$PROJECTS" -type d -name 'wf_*' 2>/dev/null | while IFS= read -r d; do
+  for f in "$d"/*.jsonl; do
+    [ -e "$f" ] || continue
+    if [ "$(head -5 "$f" | grep -cE "$STAGE_RE")" -gt 0 ]; then basename "$d" >> "$WF"; break; fi
+  done
+done
+cat "$WF" >> "$IDS"
+
 for id in ${EXTRA_IDS+"${EXTRA_IDS[@]}"}; do echo "$id" >> "$IDS"; done
 sort -u "$IDS" -o "$IDS"
 

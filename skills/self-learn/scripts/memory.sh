@@ -72,6 +72,7 @@ cmd_scan() {
       cls="$(classify "$base" "$f")"
       indexed=false
       { [ -f "$idx" ] && grep -qF "$base" "$idx"; } && indexed=true
+      [ "$cls" = index ] && indexed=true   # an index cannot index itself
       out="$(jq -c --arg d "$md" --arg b "$base" --arg h "$h" --arg s "$status" \
         --arg c "$cls" --argjson ix "$indexed" \
         '. += [{dir:$d,file:$b,hash:$h,status:$s,class:$c,indexed:$ix}]' <<<"$out")"

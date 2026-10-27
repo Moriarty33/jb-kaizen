@@ -31,7 +31,7 @@ sl_encode() { printf '%s' "$1" | sed 's|[/.]|-|g'; }
 # Emit the unprocessed-session JSON for one encoded project key.
 sl_scan_one() {
   local enc="$1"; local pd="$PROOT/$enc"
-  local last files maxts mt lines f
+  local last files maxts mt lines f cut_iso turn_ts new_turns
   last="$(jq -r --arg k "$enc" '.sessions[$k].lastTs // 0' "$SL_PAGI")"
   [ -d "$pd" ] || { jq -n --arg k "$enc" --argjson l "$last" '{project:$k,lastTs:$l,maxTs:$l,sessions:[]}'; return; }
   files="[]"; maxts="$last"
@@ -41,8 +41,13 @@ sl_scan_one() {
     [ "$mt" -le "$last" ] && continue
     [ "$mt" -gt "$maxts" ] && maxts="$mt"
     lines="$(wc -l < "$f" | tr -d ' ')"
+    # mtime moves on metadata appends; the newest TURN is what says whether there is new signal.
+    cut_iso="$(date -u -r "$last" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo "1970-01-01T00:00:00Z")"
+    turn_ts="$(jq -r 'select(.timestamp != null) | .timestamp' "$f" 2>/dev/null | sort | tail -1)"
+    new_turns="$(jq -r --arg c "$cut_iso" 'select(.timestamp != null and .timestamp > $c) | .timestamp' "$f" 2>/dev/null | wc -l | tr -d ' ')"
     files="$(jq --arg p "$f" --argjson mt "$mt" --argjson ln "$lines" \
-      '. + [{path:$p,mtime:$mt,lines:$ln}]' <<<"$files")"
+      --arg tt "${turn_ts:-}" --argjson nt "${new_turns:-0}" \
+      '. + [{path:$p,mtime:$mt,lines:$ln,newestTurn:$tt,newTurns:$nt}]' <<<"$files")"
   done
   jq -n --arg k "$enc" --argjson last "$last" --argjson mx "$maxts" --argjson fl "$files" \
     '{project:$k,lastTs:$last,maxTs:$mx,sessions:($fl | sort_by(.mtime))}'
