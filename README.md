@@ -34,6 +34,8 @@ Run it for a month and the compounding is visible: the reviewer stops missing th
 routing hook sends "check in logs why it happened" to the right skill on the first try, the tokens per task go
 down, and you spend the morning on work instead of on re-explaining yourself.
 
+It also pairs with [Hoply](#pair-with-hoply): at 17:15 Claude Code offers to review and confirm your tracked day.
+
 > Extracted from a private setup that ran this loop for **66 consecutive epochs** (June - September 2026) over
 > ~70 repositories. Everything project-specific was stripped; every hard-won engine rule stayed.
 
@@ -79,14 +81,28 @@ loaded verbatim forever.
 
 ## Install
 
-Requirements: [Claude Code](https://docs.claude.com/en/docs/claude-code) (CLI on `PATH`), `git`, `jq`, `python3`.
+Requirements: [Claude Code](https://code.claude.com/docs/en/setup) (`claude` on `PATH`), `git`, `jq`, `python3`.
 Optional: GitHub CLI `gh` (authenticated) for PR-review mining, `npx ccusage` for the model-balance phase.
 
-All three paths ask the same seven questions as their single configuration step: the terminal wizard
-for clone and bootstrap (Enter keeps the default), `/kaizen:setup` (short: `/kz-setup`) for the plugin,
-where a skill's `Bash` call has no TTY.
+### One line
 
-### 1. Plugin (recommended)
+```bash
+npx -y jb-kaizen                                                   # Node 18+
+brew install moriarty33/tap/jb-kaizen && jb-kaizen                 # Homebrew
+curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/main/bootstrap.sh | bash
+```
+
+All three run the same installer, and it asks two things only:
+
+1. **Install the recommended set? [Y/n]** - Y adds the Claude Code plugin with every skill, nightly learning at
+   03:07, the routing hook, the `/kz-*` aliases and the workday Hoply reminder. n: type the skills you want,
+   comma separated (`hoply-day, commit`), and you get exactly those as personal skills.
+2. **Your Hoply token** (hidden input, Enter skips) - see [Pair with Hoply](#pair-with-hoply).
+
+Everything else takes a default; change it later with `/kaizen:setup` or `./install.sh --wizard`. Scripted:
+`jb-kaizen --yes` (recommended set, no Hoply), `jb-kaizen --hoply` (only connect Hoply), `jb-kaizen --help`.
+
+### Inside Claude Code (plugin)
 
 ```
 /plugin marketplace add Moriarty33/jb-kaizen
@@ -94,12 +110,9 @@ where a skill's `Bash` call has no TTY.
 /kaizen:setup
 ```
 
-The skills become `/kaizen:self-learn`, `/kaizen:model-balance`, `/kaizen:loop-audit` and
-`/kaizen:setup`, and the routing hook comes with the plugin - no `settings.json` edit.
-
-Both invocation forms work. `/kaizen:setup` also installs four short aliases for daily typing -
-`/kz-setup`, `/kz-learn`, `/kz-audit`, `/kz-balance` - each a personal forwarder skill that runs
-the real one. They are the same commands, spelled shorter:
+The skills become `/kaizen:self-learn`, `/kaizen:model-balance`, `/kaizen:loop-audit`, `/kaizen:hoply-day`,
+the [bundled skills](#bundled-skills) and `/kaizen:setup`; the hooks come with the plugin - no `settings.json`
+edit. `/kaizen:setup` asks the seven wizard questions plus Hoply, and installs four short aliases:
 
 | Short | Plugin | Clone / bootstrap |
 |-------|--------|-------------------|
@@ -108,19 +121,9 @@ the real one. They are the same commands, spelled shorter:
 | `/kz-audit` | `/kaizen:loop-audit` | `/loop-audit` |
 | `/kz-balance` | `/kaizen:model-balance` | `/model-balance` |
 
-Skip them with `./install.sh --no-aliases`, or tell `/kaizen:setup` you do not want them; the
-choice is remembered in `config.json`, and switching it off later removes the alias directories
-a previous run installed.
+Skip them with `--no-aliases` (or tell `/kaizen:setup`); the choice is remembered in `config.json`.
 
-### 2. One command
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/main/bootstrap.sh | bash
-```
-
-Clones or updates `~/.jb-kaizen` and opens the same wizard.
-
-### 3. Clone
+### Clone
 
 ```bash
 git clone https://github.com/Moriarty33/jb-kaizen.git
@@ -128,11 +131,9 @@ cd jb-kaizen
 ./install.sh                                  # setup wizard: seven questions, Enter keeps the default
 ```
 
-Each step says what it is for before it asks:
-
 | Step | Asks | Why |
 |------|------|-----|
-| 1 Dependencies | install what is missing (`gh`, `node`, `uv`, `graphify`, `code`...) | each tool explains itself; `git`, `jq`, `python3` are required, the rest optional |
+| 1 Dependencies | install what is missing (`gh`, `node`, `uv`, `graphify`, `code`...) | `git`, `jq`, `python3` are required, the rest optional |
 | 2 Roots | where your git repositories live | one or several directories; new repos under them join automatically |
 | 3 Repositories | which of the found repos to study | toggle any off; nothing is written into the projects |
 | 4 Routing hook | install the `UserPromptSubmit` nudge | one line when a learned phrasing matches, silent otherwise |
@@ -141,34 +142,18 @@ Each step says what it is for before it asks:
 | 7 VS Code | `claude-launcher`, `graphify-watch` | see [Editor companions](#editor-companions) |
 
 Answers are saved to `~/.claude/self-learn/config.json`, so upgrades and other machines re-run silently
-(outside a terminal it never asks). `./install.sh --wizard` re-opens the questions; flags skip them for scripted
-installs and are remembered: `--workspace DIRS`, `--schedule [HH:MM]`, `--store-remote URL`, `--hook/--no-hook`,
-`--vscode LIST`, `--aliases/--no-aliases`, `--plugin`, `--yes`. The install itself puts three skills, the four
-short aliases, a routing hook, the retry library and a private store in place, then registers every git repo
-under your roots. Re-running is safe: it upgrades in
-place, backs up anything it overwrites, and never touches learned state. `--plugin` is for a plugin install
-finishing its setup non-interactively: it skips what the plugin already delivers (the skills copy, the hook
-registration).
+(outside a terminal it never asks). Flags skip the questions and are remembered: `--workspace DIRS`,
+`--schedule [HH:MM]`, `--store-remote URL`, `--hook/--no-hook`, `--vscode LIST`, `--aliases/--no-aliases`,
+`--skills LIST`, `--hoply-reminder/--no-hoply-reminder`, `--plugin`, `--yes`. Re-running is safe: it upgrades
+in place, backs up anything it overwrites, and never touches learned state.
 
-Try it interactively first - nothing is edited in this mode:
+Try it interactively first: `/self-learn status` (epoch, what is tracked), `/self-learn` (a full pass that only
+proposes diffs and says why), then `/self-learn apply` (snapshot + apply the approved ones).
 
-```text
-claude
-> /self-learn status      # epoch 0, what is tracked, what is pending
-> /self-learn             # full pass, propose only: shows the diffs it would make and why
-> /self-learn apply       # same, but snapshot + apply the approved ones
-```
-
-Then let it run while you sleep:
-
-```bash
-./install.sh --schedule 03:07                                   # launchd on macOS, systemd --user on Linux
-./install.sh --store-remote git@github.com:you/kaizen-store.git  # back the store up to a PRIVATE repo
-```
-
-`./install.sh --help` lists every flag; `./uninstall.sh` removes it all (the store stays unless `--purge-store`).
-Plugin install: drop the nightly job first - `ROOT="$(ls -td "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/*/kaizen/*/ | head -1)"; bash "$ROOT/uninstall.sh"`
-(add `--purge-store` to delete the store too), then `/plugin uninstall kaizen@jb-kaizen`.
+`./install.sh --help` lists every flag; `./uninstall.sh` removes it all (the store stays unless `--purge-store`;
+`--hoply` also disconnects Hoply). Plugin install: drop the scheduled jobs first -
+`ROOT="$(ls -td "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/*/kaizen/*/ | head -1)"; bash "$ROOT/uninstall.sh"`,
+then `/plugin uninstall kaizen@jb-kaizen`.
 
 ### What gets installed where
 
@@ -180,6 +165,10 @@ Plugin install: drop the nightly job first - `ROOT="$(ls -td "${CLAUDE_CONFIG_DI
 | `~/.claude/skills/loop-audit/` | clone/bootstrap path: design/audit any unattended loop - 6-part contract + three runaway guardrails |
 | `~/.claude/skills/kz-{setup,learn,audit,balance}/` | both paths: the short aliases, one `SKILL.md` each, forwarding to `setup` / `self-learn` / `loop-audit` / `model-balance`; skipped by `--no-aliases` |
 | `~/.claude/hooks/skill-router.py` | clone/bootstrap path: `UserPromptSubmit` hook, one-line nudge toward a skill when your learned phrasings match, silent otherwise - the plugin delivers this hook itself, see the row above |
+| `~/.claude/skills/{hoply-day,commit,review-code,fix-pr-comments,github}/` | clone/bootstrap path: the Hoply day review and the [bundled skills](#bundled-skills); a same-named skill of yours is kept |
+| `~/.claude/hooks/hoply-day-nudge.py` | clone/bootstrap path: `SessionStart` + `UserPromptSubmit` hook offering the day review once per workday from 17:15 Europe/Kyiv - the plugin ships it in `hooks/hooks.json` |
+| `~/.config/hoply/token`, `headers.sh` | the Hoply token (0600) and the `headersHelper` that sends it; `uninstall.sh --hoply` removes both |
+| `~/Library/LaunchAgents/com.self-learn.hoply-day.plist` | the workday desktop reminder (Linux: `self-learn-hoply-day.timer`); `--no-hoply-reminder` removes it |
 | `~/.claude/lib/claude-retry.sh` | bounded retries, wall-clock budget, process-group kill, auth-fail short-circuit |
 | `~/.claude/lib/skill-dir.sh` | resolves the on-disk skill dir for both the clone/bootstrap and plugin layouts; sourced by the nightly runner and the skill scripts |
 | `~/.claude/night-guard-settings.json` | deny-list passed to the nightly run |
@@ -187,6 +176,41 @@ Plugin install: drop the nightly job first - `ROOT="$(ls -td "${CLAUDE_CONFIG_DI
 | `~/.claude/self-learn/config.json` | your install answers: roots, skipped repos, hook, schedule, remote, VS Code choices, aliases |
 | `~/.vscode/extensions/local.claude-launcher-*` | optional: rocket button that opens `claude` at the window root |
 | `~/.vscode/extensions/local.graphify-watch-*` | optional: keeps the graphify graph of the open folder current |
+
+## Pair with Hoply
+
+<a href="https://hoply.work"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hoply-logo.dark.svg">
+  <img alt="Hoply" src="docs/assets/hoply-logo.light.svg" height="40">
+</picture></a>
+
+[Hoply](https://hoply.work) keeps your time in one place - Harvest entries, Google meetings, GitHub work
+sessions, Jira links - and proposes what is missing. Paired with JB Kaizen, it closes the day for you:
+
+- **At 17:15 Europe/Kyiv on workdays** Claude Code offers the review once (a hook, silent and offline until
+  then), and a desktop notification says the same when no session is open. Both stop once the day is done.
+- **`/kaizen:hoply-day`** shows what is tracked, what is not synced yet, and the open proposals; you confirm,
+  fix or dismiss them, and nothing is written until you say yes to the exact list.
+- **Connect:** in Hoply open Connectors - Claude Code, copy the token, and paste it when the installer asks
+  (or later: `npx -y jb-kaizen --hoply`). Hoply is added as a remote MCP server (`claude mcp get hoply`).
+- **Privacy:** the token stays in `~/.config/hoply/token` (0600) and reaches Claude Code only through a
+  `headersHelper` script, never `~/.claude.json`. Hoply sees nothing from your sessions; Claude does the
+  wording locally, and Hoply's own text (meeting titles, notes) is treated as data, never as instructions.
+
+## Bundled skills
+
+Four everyday skills ship with the plugin, project-agnostic, configured by an optional
+`.claude/dev.config.json` (searched from the current directory upward: `workspaceRoot`, `repos`, `githubOrg`,
+`baseBranch`, `branchPrefix`, `ticketPattern`, `commit.*`, `commands.<repo>.lintFix|typecheck`):
+
+| Skill | What it does |
+|-------|--------------|
+| `/kaizen:commit` | ticket-prefixed commit from your changes, linted first, never `--no-verify` |
+| `/kaizen:review-code` | strict P0-P4 self-review of your branch, architecture map first, fixes only on your yes |
+| `/kaizen:fix-pr-comments` | answers every open review thread: implement, skip with a reason, or mark obsolete |
+| `/kaizen:github` | the git/gh conventions the other three follow: `git -C`, token-frugal `gh`, safe merges |
+
+A clone install names them `/commit`, `/review-code`... and never overwrites a skill of yours with the same name.
 
 ## What a night looks like
 
@@ -214,15 +238,11 @@ That last paragraph is the point: the engine spends as much effort *refuting* it
 Two small VS Code extensions ship in `vscode/` (MIT, source plus a prebuilt `.vsix`, installed through the `code`
 CLI by wizard step 7 or `vscode/install-vscode.sh`). Both are optional; the engine does not depend on them.
 
-- **claude-launcher** adds a rocket button to the editor title bar. One click opens an editor-area terminal at the
-  window's root (the folder, or the directory holding the `.code-workspace` file) and runs
-  `claude --permission-mode auto`. Every project is one click from a session, so more of your work lands in the
-  transcripts the engine learns from.
+- **claude-launcher** adds a rocket button to the editor title bar: one click opens a terminal at the window's
+  root and runs `claude --permission-mode auto`, so more of your work lands in the transcripts the engine learns from.
 - **graphify-watch** keeps a [graphify](https://pypi.org/project/graphifyy/) knowledge graph of the open folder
-  current: native VS Code file watching, a debounced one-shot `graphify update` on code changes, the state in the
-  status bar, a shrink guard with one automatic `--force` retry, and a lock so two windows never rebuild at once.
-  With the graph current, agents answer "how does X relate to Y" from a scoped subgraph instead of grepping the
-  tree. Needs `graphify`; wizard step 1 installs it with `uv tool install graphifyy` and adds the `/graphify` skill.
+  current (debounced one-shot updates, state in the status bar, a shrink guard, one rebuild at a time), so agents
+  query a scoped subgraph instead of grepping. Needs `graphify` (wizard step 1: `uv tool install graphifyy`).
 
 ## Configuration
 
@@ -230,16 +250,15 @@ Everything lives in the store, never in your projects.
 
 | Where | Knob |
 |-------|------|
-| `config.json` | the install answers; edit it or re-run `./install.sh --wizard` |
+| `config.json` | the install answers; edit it or re-run `./install.sh --wizard`; `hoply.{time,timezone,reminder}` move or mute the day review offer |
 | `registry.json` | `repos[key].enabled`, `repos[key].config.{batch,maxTotal,botLogins}`, global `botLogins` |
 | `nightly-prompt.txt` | the run contract - scope rules, phases, budget; edit freely |
 | `scripts/nightly-run.sh` | `SELF_LEARN_MODEL`, `SELF_LEARN_BUDGET_USD`, `CLAUDE_RETRY_TIMEOUT`, `SELF_LEARN_WORKSPACE` |
 | `routing/routing-map.json` | the learned phrasings the hook matches (any language, STT mishears included) |
 | env `SELF_LEARN_HOME` / `SELF_LEARN_ROOTS` | move the store / override discovery roots for one run |
 
-**New projects** need no setup: every run rescans your roots, the resolved skill directory's
-`scripts/register.sh <path>` (see `lib/skill-dir.sh`) enrolls one the moment you `git init` it, and
-`./install.sh --wizard` toggles any repo off.
+**New projects** need no setup: every run rescans your roots, `scripts/register.sh <path>` in the skill
+directory enrolls one at once, and `./install.sh --wizard` toggles any repo off.
 
 ## FAQ
 
@@ -269,8 +288,8 @@ names, paths, PR themes and distilled feedback - **keep it private**.
 bash tests/smoke.sh     # installs into a throwaway HOME and exercises every script (no network, no claude)
 ```
 
-Layout: `skills/` (installed verbatim), `hooks/`, `lib/`, `templates/` (rendered into the store on install),
-`docs/` (architecture, safety), `tests/`. Version in `VERSION`, history in `CHANGELOG.md`.
+Layout: `install-entry.sh` (the one-line installer), `skills/`, `hooks/`, `lib/`, `templates/` (rendered into the
+store), `npm/` and `brew/` (packaging), `docs/`, `tests/`. Version in `VERSION`, history in `CHANGELOG.md`.
 
 ## Author
 

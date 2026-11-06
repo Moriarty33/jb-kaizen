@@ -1,0 +1,41 @@
+{
+  "name": "jb-kaizen",
+  "version": "1.2.0",
+  "description": "One-line installer for JB Kaizen, the Claude Code setup that improves itself every night, with the Hoply day review.",
+  "bin": {
+    "jb-kaizen": "bin/jb-kaizen.js"
+  },
+  "files": [
+    "bin/",
+    "dist/"
+  ],
+  "scripts": {
+    "prepack": "node stage.js",
+    "postpack": "node stage.js --clean"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "keywords": [
+    "claude-code",
+    "claude",
+    "skills",
+    "self-improvement",
+    "hoply",
+    "time-tracking"
+  ],
+  "author": "Bogdan Jaminski (https://github.com/Moriarty33)",
+  "license": "MIT",
+  "homepage": "https://github.com/Moriarty33/jb-kaizen#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Moriarty33/jb-kaizen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Moriarty33/jb-kaizen/issues"
+  }
+}

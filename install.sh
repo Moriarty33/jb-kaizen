@@ -1,38 +1,6 @@
 #!/usr/bin/env bash
-# install.sh - install the self-learn extension into a Claude Code setup.
-#
-#   ./install.sh                     setup wizard (in a terminal, no flags): dependencies,
-#                                    repo roots, which repos to study, routing hook, nightly
-#                                    time, private remote, VS Code companions
-#   ./install.sh [--workspace DIRS] [--schedule [HH:MM] | --no-schedule] [--store-remote URL]
-#                [--hook | --no-hook] [--vscode LIST] [--aliases|--no-aliases] [--plugin] [--wizard] [--yes] [--dry-run]
-#
-#   --workspace DIRS     root(s) holding your git repos, comma-separated (default ~/workspace).
-#                        Discovered repos are registered in the private store; nothing is
-#                        written into the projects themselves.
-#   --schedule [HH:MM]   install the nightly job (launchd on macOS, systemd --user timer on
-#                        Linux; prints a crontab line elsewhere). Default 03:07.
-#   --no-schedule        do not (re)install the nightly job, and remember that.
-#   --store-remote URL   point the private store at a PRIVATE git remote and push once.
-#   --hook / --no-hook   install / skip the UserPromptSubmit routing hook (default: install).
-#   --vscode LIST        VS Code companions: claude-launcher,graphify-watch | all | none.
-#   --aliases/--no-aliases  install / skip the short /kz-* alias commands (default: install).
-#   --wizard             ask the questions even when flags or a saved config exist.
-#   --yes                never ask: flags, then the saved config, then defaults.
-#   --dry-run            print what would change, touch nothing.
-#   --plugin             plugin install: skip what the plugin already delivers (skills, routing-hook
-#                        registration); still do deps, config.json, store, discovery, scheduler, VS Code.
-#
-# Precedence on every run: flags > $SELF_LEARN_HOME/config.json > defaults. The effective
-# answers are written back to config.json, so the next run - an upgrade, CI, another machine
-# restoring the store - repeats them silently. A run with no flags outside a terminal never asks.
-#
-# Idempotent: re-running upgrades the skills/hook/lib in place, backs up anything it
-# overwrites (<file>.bak-<stamp>), and never touches learned state (journal, cursors,
-# learned-patterns.md, routing map) once it exists.
-#
-# Env overrides: CLAUDE_CONFIG_DIR (default ~/.claude), SELF_LEARN_HOME (default
-# $CLAUDE_CONFIG_DIR/self-learn).
+# install.sh - install the self-learn extension into a Claude Code setup; flags: ./install.sh --help (lib/install-help.txt).
+# shellcheck disable=SC2034  # answer variables are read by the sourced lib/ files and install.sh
 set -euo pipefail
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -43,7 +11,7 @@ LABEL="com.self-learn.nightly"
 # Answers: empty = not given on the command line (filled from config.json, then defaults).
 # shellcheck disable=SC2034  # the answer variables are consumed by the sourced wizard
 DISABLED_REPOS=""; ROOTS_CSV=""; WITH_HOOK=""; SCHEDULE=""; SCHED_TIME=""; STORE_REMOTE=""
-VSCODE_LAUNCHER=""; VSCODE_GRAPHIFY=""; ALIASES=""
+VSCODE_LAUNCHER=""; VSCODE_GRAPHIFY=""; ALIASES=""; SKILLS_CSV=""; HOPLY_REMINDER=""; HOPLY_TIME=""; HOPLY_TZ=""
 WIZARD=0; ASSUME_YES=0; DRY=0; FLAGGED=0; PLUGIN_MODE=0
 
 while [ $# -gt 0 ]; do
@@ -64,10 +32,12 @@ while [ $# -gt 0 ]; do
       shift 2 ;;
     --plugin) PLUGIN_MODE=1; shift ;;
     --aliases|--no-aliases) FLAGGED=1; if [ "$1" = --aliases ]; then ALIASES=1; else ALIASES=0; fi; shift ;;
+    --skills) SKILLS_CSV="$(printf '%s' "$2" | tr -d ' ')"; FLAGGED=1; shift 2 ;;
+    --hoply-reminder|--no-hoply-reminder) FLAGGED=1; if [ "$1" = --hoply-reminder ]; then HOPLY_REMINDER=1; else HOPLY_REMINDER=0; fi; shift ;;
     --wizard) WIZARD=1; shift ;;
     --yes|-y) ASSUME_YES=1; shift ;;
     --dry-run) DRY=1; shift ;;
-    -h|--help) sed -n '2,/^set -euo/p' "$0" | sed '$d' | cut -c3-; exit 0 ;;
+    -h|--help) cat "$SRC/lib/install-help.txt"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -83,6 +53,7 @@ run()  { if [ "$DRY" -eq 1 ]; then say "[dry-run] $*"; else "$@"; fi; }
 . "$SRC/lib/install-aliases.sh"
 . "$SRC/lib/install-wizard.sh"
 . "$SRC/lib/install-summary.sh"
+. "$SRC/lib/install-skills.sh"; . "$SRC/lib/install-reminder.sh"
 
 # ---------- 0. answers: flags > saved config > wizard > defaults ----------
 wizard_load_config
@@ -135,28 +106,7 @@ render() {
 }
 
 # ---------- 1. skills ----------
-if [ "$PLUGIN_MODE" -eq 1 ]; then
-  step "Skills"
-  say "skip    delivered by the plugin"
-else
-  step "Installing skills into $CLAUDE_DIR/skills"
-  for sk in "$SRC"/skills/*/; do
-    name="$(basename "$sk")"
-    if [ "$name" = setup ]; then continue; fi   # plugin-only: needs ${CLAUDE_PLUGIN_ROOT}
-    dest="$CLAUDE_DIR/skills/$name"
-    while IFS= read -r f; do
-      rel="${f#"$sk"}"
-      case "$rel" in
-        references/learned-patterns*.md|journal/*) seed "$f" "$dest/$rel" ;;   # accumulated state
-        *) put "$f" "$dest/$rel" ;;
-      esac
-    done < <(find "$sk" -type f | sort)
-    [ "$DRY" -eq 1 ] || chmod +x "$dest"/scripts/*.sh 2>/dev/null || true
-  done
-  for old in loop-contract kaizen-setup setup; do   # renamed in 1.1.1/1.1.2; `setup` may be the user's own, so it goes only with our marker
-    d="$CLAUDE_DIR/skills/$old"; [ -d "$d" ] && { [ "$old" != setup ] || sl_is_ours "$d"; } && { run rm -rf "$d"; say "removed $d (renamed)"; } || true
-  done
-fi
+install_skills
 
 # ---------- 2. lib + guard settings ----------
 step "Installing runtime pieces into $CLAUDE_DIR"
@@ -199,6 +149,8 @@ elif [ "$PLUGIN_MODE" -eq 1 ]; then
     say "WARN    registers its own; remove the old one with ./uninstall.sh or delete the entry"
   fi
 fi
+
+nudge_hook_apply
 
 # ---------- skill dir: resolved after step 1, which is what creates it on a clone install ----------
 if ! SKILL_DIR="$(sl_skill_dir)"; then
@@ -273,6 +225,8 @@ elif [ -f "$HOME/Library/LaunchAgents/$LABEL.plist" ] || [ -f "$HOME/.config/sys
   step "Nightly job"
   say "a nightly job is still installed; remove it with ./uninstall.sh, or turn it back on with --schedule"
 fi
+
+reminder_apply
 
 # ---------- 7. store remote ----------
 if [ -n "$STORE_REMOTE" ]; then

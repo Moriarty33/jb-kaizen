@@ -27,12 +27,12 @@ jobs:
           git --version
       - name: Syntax
         run: |
-          for f in install.sh uninstall.sh bootstrap.sh lib/*.sh templates/*.sh skills/*/scripts/*.sh tests/*.sh vscode/*.sh; do bash -n "$f"; done
-          python3 -m py_compile hooks/skill-router.py docs/diagrams/*.py
+          for f in install.sh install-entry.sh uninstall.sh bootstrap.sh lib/*.sh templates/*.sh skills/*/scripts/*.sh tests/*.sh vscode/*.sh; do bash -n "$f"; done
+          python3 -m py_compile hooks/skill-router.py hooks/hoply-day-nudge.py docs/diagrams/*.py
           for f in templates/*.json; do jq -e . "$f" >/dev/null; done
       - name: Shellcheck
         if: matrix.os == 'ubuntu-latest'
-        run: shellcheck -S warning install.sh uninstall.sh bootstrap.sh tests/*.sh lib/*.sh
+        run: shellcheck -S warning install.sh install-entry.sh uninstall.sh bootstrap.sh tests/*.sh lib/*.sh templates/hoply-day-notify.sh
       - name: Plugin and marketplace manifests
         run: |
           v="$(cat VERSION)"
@@ -66,6 +66,12 @@ jobs:
           git diff --exit-code -- docs/assets/diagrams || { echo 'docs/assets/diagrams is out of date: run python3 docs/diagrams/build.py and commit'; exit 1; }
       - name: Smoke test (install into a throwaway HOME, run every script)
         run: bash tests/smoke.sh
+      - name: npm package lists only the installer tree
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          npm pack ./npm --dry-run --json > /tmp/pack.json
+          jq -e '[.[0].files[].path] | index("dist/install-entry.sh") != null' /tmp/pack.json >/dev/null
+          jq -e --arg v "$(cat VERSION)" '.[0].version == $v' /tmp/pack.json >/dev/null
       - name: Bundled .vsix matches package.json
         run: |
           for e in claude-launcher graphify-watch; do v="$(jq -r .version "vscode/$e/package.json")"; test -f "vscode/$e/$e-$v.vsix" || { echo "missing vscode/$e/$e-$v.vsix"; exit 1; }; done

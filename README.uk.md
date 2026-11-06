@@ -27,6 +27,8 @@
 «подивись в логах чому впало» в правильний скіл, токенів на задачу менше, і ранок іде на роботу, а не на
 повторне пояснення того самого.
 
+А ще він працює [у парі з Hoply](#у-парі-з-hoply): о 17:15 Claude Code пропонує переглянути й підтвердити ваш день.
+
 > Витягнуто з приватного сетапу, де цей цикл крутився **66 епох поспіль** (червень - вересень 2026) по ~70
 > репозиторіях. Усе проєктно-специфічне прибрано, усі вистраждані правила двигуна лишилися.
 
@@ -64,14 +66,28 @@ Memory проєкту - найдорожчий вхід: `MEMORY.md` ванта�
 
 ## Встановлення
 
-Потрібно: [Claude Code](https://docs.claude.com/en/docs/claude-code) у `PATH`, `git`, `jq`, `python3`.
+Потрібно: [Claude Code](https://code.claude.com/docs/en/setup) (`claude` у `PATH`), `git`, `jq`, `python3`.
 Опційно: `gh` (авторизований) для PR-рев'ю, `npx ccusage` для фази балансу моделей.
 
-Усі три шляхи ставлять ті самі сім питань як єдиний крок налаштування: термінальний майстер для
-клонування/bootstrap (Enter лишає дефолт) і `/kaizen:setup` (скорочено `/kz-setup`) для плагіна,
-де у `Bash`-виклику скіла немає TTY.
+### Одним рядком
 
-### 1. Плагін (рекомендовано)
+```bash
+npx -y jb-kaizen                                                   # Node 18+
+brew install moriarty33/tap/jb-kaizen && jb-kaizen                 # Homebrew
+curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/main/bootstrap.sh | bash
+```
+
+Усі три запускають той самий інсталятор, і він питає лише дві речі:
+
+1. **Поставити рекомендований набір? [Y/n]** - Y додає плагін Claude Code з усіма скілами, нічне навчання о 03:07,
+   хук роутингу, аліаси `/kz-*` і нагадування Hoply в робочі дні. n: введіть потрібні скіли через кому
+   (`hoply-day, commit`) - і отримаєте саме їх, як персональні скіли.
+2. **Ваш токен Hoply** (введення приховане, Enter пропускає) - див. [У парі з Hoply](#у-парі-з-hoply).
+
+Решта бере дефолти; змінити їх можна потім через `/kaizen:setup` або `./install.sh --wizard`. Для скриптів:
+`jb-kaizen --yes` (рекомендований набір без Hoply), `jb-kaizen --hoply` (лише підключити Hoply), `jb-kaizen --help`.
+
+### Усередині Claude Code (плагін)
 
 ```
 /plugin marketplace add Moriarty33/jb-kaizen
@@ -79,13 +95,9 @@ Memory проєкту - найдорожчий вхід: `MEMORY.md` ванта�
 /kaizen:setup
 ```
 
-Скіли стають `/kaizen:self-learn`, `/kaizen:model-balance`, `/kaizen:loop-audit` і
-`/kaizen:setup`,
-а хук роутингу приходить разом із плагіном - без правок `settings.json`.
-
-Працюють обидві форми виклику. `/kaizen:setup` також ставить чотири короткі аліаси для щоденного
-набору - `/kz-setup`, `/kz-learn`, `/kz-audit`, `/kz-balance`. Кожен - персональний скіл-форвардер,
-який просто запускає справжній: ті самі команди, лише коротше.
+Скіли стають `/kaizen:self-learn`, `/kaizen:model-balance`, `/kaizen:loop-audit`, `/kaizen:hoply-day`,
+[вбудовані скіли](#вбудовані-скіли) і `/kaizen:setup`; хуки приходять разом із плагіном - без правок
+`settings.json`. `/kaizen:setup` ставить сім питань майстра плюс Hoply і додає чотири короткі аліаси:
 
 | Скорочено | Плагін | Клонування / bootstrap |
 |-----------|--------|------------------------|
@@ -94,18 +106,9 @@ Memory проєкту - найдорожчий вхід: `MEMORY.md` ванта�
 | `/kz-audit` | `/kaizen:loop-audit` | `/loop-audit` |
 | `/kz-balance` | `/kaizen:model-balance` | `/model-balance` |
 
-Не потрібні - `./install.sh --no-aliases` або скажіть це `/kaizen:setup`; вибір
-запам'ятовується в `config.json`, а вимкнення прибирає аліаси, які поставив попередній запуск.
+Не потрібні - `--no-aliases` або скажіть це `/kaizen:setup`; вибір запам'ятовується в `config.json`.
 
-### 2. Одна команда
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/main/bootstrap.sh | bash
-```
-
-Клонує або оновлює `~/.jb-kaizen` і відкриває той самий майстер.
-
-### 3. Клонування
+### Клонування
 
 ```bash
 git clone https://github.com/Moriarty33/jb-kaizen.git
@@ -113,11 +116,9 @@ cd jb-kaizen
 ./install.sh                                  # майстер налаштування: сім питань, Enter лишає дефолт
 ```
 
-Кожен крок спершу пояснює, для чого він:
-
 | Крок | Питає | Навіщо |
 |------|-------|--------|
-| 1 Залежності | поставити те, чого бракує (`gh`, `node`, `uv`, `graphify`, `code`...) | кожен інструмент пояснює себе; обов'язкові лише `git`, `jq`, `python3` |
+| 1 Залежності | поставити те, чого бракує (`gh`, `node`, `uv`, `graphify`, `code`...) | обов'язкові лише `git`, `jq`, `python3` |
 | 2 Корені | де лежать ваші git-репозиторії | одна або кілька тек; нові репо під ними підхоплюються самі |
 | 3 Репозиторії | які зі знайдених вивчати | будь-який можна вимкнути; у проєкти нічого не пишеться |
 | 4 Хук роутингу | ставити підказку `UserPromptSubmit` | один рядок, коли збігається вивчена фраза; інакше тиша |
@@ -126,29 +127,52 @@ cd jb-kaizen
 | 7 VS Code | `claude-launcher`, `graphify-watch` | див. [Компаньйони для редактора](#компаньйони-для-редактора) |
 
 Відповіді зберігаються в `~/.claude/self-learn/config.json`, тож оновлення та інші машини проходять тихо
-(поза терміналом майстер не питає нічого). `./install.sh --wizard` відкриває питання знову; прапорці пропускають
-їх для скриптового встановлення і запам'ятовуються: `--workspace DIRS`, `--schedule [HH:MM]`, `--store-remote URL`,
-`--hook/--no-hook`, `--vscode LIST`, `--aliases/--no-aliases`, `--plugin`, `--yes`. `--plugin` - для плагінного встановлення, що
-неінтерактивно завершує налаштування: пропускає те, що плагін уже приніс сам (копію скілів, реєстрацію хука).
+(поза терміналом майстер не питає нічого). Прапорці пропускають питання і запам'ятовуються: `--workspace DIRS`,
+`--schedule [HH:MM]`, `--store-remote URL`, `--hook/--no-hook`, `--vscode LIST`, `--aliases/--no-aliases`,
+`--skills LIST`, `--hoply-reminder/--no-hoply-reminder`, `--plugin`, `--yes`.
 
-Спершу спробуйте інтерактивно - у цьому режимі нічого не редагується:
+Спершу спробуйте інтерактивно: `/self-learn status` (епоха, що відстежується), `/self-learn` (повний прохід, лише
+пропозиції з поясненнями), потім `/self-learn apply` (снапшот + застосування).
 
-```text
-claude
-> /self-learn status      # епоха 0, що відстежується
-> /self-learn             # повний прохід, лише пропозиції з поясненнями
-> /self-learn apply       # те саме, але снапшот + застосування
-```
+`./install.sh --help` - усі прапорці; `./uninstall.sh` прибирає все (сховище лишається, якщо не `--purge-store`;
+`--hoply` ще й відключає Hoply). Плагінне встановлення: спершу зніміть заплановані джоби -
+`ROOT="$(ls -td "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/*/kaizen/*/ | head -1)"; bash "$ROOT/uninstall.sh"`,
+потім `/plugin uninstall kaizen@jb-kaizen`.
 
-Потім - на ніч:
+## У парі з Hoply
 
-```bash
-./install.sh --schedule 03:07                                   # launchd на macOS, systemd --user на Linux
-./install.sh --store-remote git@github.com:you/kaizen-store.git  # бекап сховища в ПРИВАТНИЙ репозиторій
-```
+<a href="https://hoply.work"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hoply-logo.dark.svg">
+  <img alt="Hoply" src="docs/assets/hoply-logo.light.svg" height="40">
+</picture></a>
 
-`./install.sh --help` - усі прапорці; `./uninstall.sh` прибирає все (сховище лишається, якщо не `--purge-store`).
-Плагінне встановлення: спершу зніміть нічну джобу - `ROOT="$(ls -td "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/*/kaizen/*/ | head -1)"; bash "$ROOT/uninstall.sh"` (з `--purge-store` - і сховище), потім `/plugin uninstall kaizen@jb-kaizen`.
+[Hoply](https://hoply.work) тримає ваш час в одному місці - записи Harvest, зустрічі Google, робочі сесії GitHub,
+посилання на Jira - і пропонує те, чого бракує. У парі з JB Kaizen він закриває день за вас:
+
+- **О 17:15 за Києвом у робочі дні** Claude Code один раз пропонує переглянути день (хук, тихий і офлайн до
+  того часу), а коли сесії немає - те саме каже сповіщення на робочому столі. Обидва замовкають, щойно день закрито.
+- **`/kaizen:hoply-day`** показує, що вже записано, що ще не синхронізовано, і відкриті пропозиції; ви
+  підтверджуєте, правите або відхиляєте їх, і нічого не записується, поки ви не скажете «так» точному списку.
+- **Підключення:** у Hoply відкрийте Connectors - Claude Code, скопіюйте токен і вставте, коли інсталятор
+  спитає (або пізніше: `npx -y jb-kaizen --hoply`). Hoply додається як віддалений MCP-сервер (`claude mcp get hoply`).
+- **Приватність:** токен лежить у `~/.config/hoply/token` (0600) і доходить до Claude Code лише через скрипт
+  `headersHelper`, ніколи не через `~/.claude.json`. Hoply не бачить нічого з ваших сесій; формулювання робить
+  Claude локально, а текст із Hoply (назви зустрічей, нотатки) - це дані, ніколи не інструкції.
+
+## Вбудовані скіли
+
+Чотири щоденні скіли йдуть разом із плагіном, без прив'язки до проєкту; налаштовуються необов'язковим
+`.claude/dev.config.json` (шукається від поточної теки вгору: `workspaceRoot`, `repos`, `githubOrg`, `baseBranch`,
+`branchPrefix`, `ticketPattern`, `commit.*`, `commands.<repo>.lintFix|typecheck`):
+
+| Скіл | Що робить |
+|------|-----------|
+| `/kaizen:commit` | коміт із префіксом тікета з ваших змін, спершу лінт, ніколи `--no-verify` |
+| `/kaizen:review-code` | суворе самостійне рев'ю гілки P0-P4, спершу мапа архітектури, правки лише після вашого «так» |
+| `/kaizen:fix-pr-comments` | відповідає на кожен відкритий тред рев'ю: виправити, пропустити з причиною чи позначити застарілим |
+| `/kaizen:github` | правила git/gh, яких тримаються інші три: `git -C`, ощадливий `gh`, безпечні мержі |
+
+При клонуванні вони звуться `/commit`, `/review-code`... і ніколи не перезаписують ваш скіл з такою самою назвою.
 
 ## Що і куди ставиться
 
@@ -160,6 +184,10 @@ claude
 | `~/.claude/skills/loop-audit/` | шлях клонування/bootstrap: контракт із 6 частин + три запобіжники для будь-якого автономного циклу |
 | `~/.claude/skills/kz-{setup,learn,audit,balance}/` | обидва шляхи: короткі аліаси, по одному `SKILL.md`, що ведуть до `setup` / `self-learn` / `loop-audit` / `model-balance`; `--no-aliases` їх не ставить |
 | `~/.claude/hooks/skill-router.py` | шлях клонування/bootstrap: хук `UserPromptSubmit`, один рядок підказки, коли збігається вивчена фраза; інакше тиша - плагін приносить цей хук сам, див. рядок вище |
+| `~/.claude/skills/{hoply-day,commit,review-code,fix-pr-comments,github}/` | шлях клонування/bootstrap: перегляд дня Hoply і [вбудовані скіли](#вбудовані-скіли); ваш скіл з такою самою назвою лишається |
+| `~/.claude/hooks/hoply-day-nudge.py` | шлях клонування/bootstrap: хук `SessionStart` + `UserPromptSubmit`, що раз на робочий день з 17:15 за Києвом пропонує переглянути день - плагін приносить його в `hooks/hooks.json` |
+| `~/.config/hoply/token`, `headers.sh` | токен Hoply (0600) і `headersHelper`, що його надсилає; `uninstall.sh --hoply` прибирає обидва |
+| `~/Library/LaunchAgents/com.self-learn.hoply-day.plist` | сповіщення в робочі дні (Linux: `self-learn-hoply-day.timer`); `--no-hoply-reminder` прибирає його |
 | `~/.claude/lib/claude-retry.sh` | обмежені ретраї, бюджет часу, kill усієї process group, стоп на auth-помилці |
 | `~/.claude/lib/skill-dir.sh` | резолвить теку скіла на диску для обох варіантів - клонування/bootstrap і плагіна; підключається нічним раннером і скриптами скілів |
 | `~/.claude/night-guard-settings.json` | deny-list для нічного запуску |

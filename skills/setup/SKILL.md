@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Configures JB Kaizen after `/plugin install kaizen@jb-kaizen` - the model is the wizard, since a skill's Bash call has no TTY for the interactive one. Asks the same seven questions the terminal wizard asks, then runs one non-interactive install. Use on first install or to reconfigure - "change the nightly time", "change my workspace roots", "point the store at a remote", "add/remove a repository", "toggle the routing hook", "install/remove the VS Code companions". Invoke with `/kaizen:setup`; plugin installs only - clone and bootstrap use the terminal wizard.
+description: Configures JB Kaizen after `/plugin install kaizen@jb-kaizen` - the model is the wizard, since a skill's Bash call has no TTY for the interactive one. Asks the same seven questions the terminal wizard asks plus whether to connect Hoply, then runs one non-interactive install. Use on first install or to reconfigure - "change the nightly time", "change my workspace roots", "point the store at a remote", "add/remove a repository", "toggle the routing hook", "install/remove the VS Code companions", "connect Hoply". Invoke with `/kaizen:setup`; plugin installs only - clone and bootstrap use the terminal wizard.
 allowed-tools: Bash, AskUserQuestion
 compatibility: Designed for Claude Code
 ---
@@ -14,14 +14,14 @@ its retry loop at the first "not found" (`[ -t 0 ] || break`), and the user woul
 defaults with no questions asked at all - the opposite of "one click, the wizard configures
 everything".
 
-So this skill never shells into the interactive wizard. **You ask the seven questions
+So this skill never shells into the interactive wizard. **You ask the eight questions
 yourself** with `AskUserQuestion`, then run `install.sh` exactly once, non-interactively, with
 every answer passed as a flag.
 
-## 1. Ask the seven questions
+## 1. Ask the eight questions
 
-One `AskUserQuestion` call, all seven questions together, defaults pre-selected. Ask in the
-language the user is writing in. The seven, with the meaning to show the user for each
+One `AskUserQuestion` call, all eight questions together, defaults pre-selected. Ask in the
+language the user is writing in. The eight, with the meaning to show the user for each
 (mirrors `extension/README.md`'s step table):
 
 | # | Question | Means |
@@ -33,6 +33,7 @@ language the user is writing in. The seven, with the meaning to show the user fo
 | 5 | Nightly run | run every night, and at what local time (launchd / systemd --user / crontab, whichever the OS uses) |
 | 6 | Private remote | a PRIVATE git remote to back the store up to - it holds project names, paths and distilled feedback, never push it anywhere public |
 | 7 | VS Code companions | install `claude-launcher` and/or `graphify-watch` (bundled, MIT, installed through the `code` CLI) |
+| 8 | Hoply | connect Hoply for the 17:15 day review (`/kaizen:hoply-day`) and the workday reminder - yes or skip; never the token itself (section 3b) |
 
 The install also adds the four short aliases `/kz-setup`, `/kz-learn`, `/kz-audit`, `/kz-balance`
 to `~/.claude/skills/`. If the user says they do not want them, append `--no-aliases` to the
@@ -40,7 +41,7 @@ install command below.
 
 Pre-select sensible defaults (dependencies: yes if any missing; roots: `~/workspace` if it
 exists and holds git repos; repositories: all studied; routing hook: on; nightly: off;
-private remote: none; VS Code: off) so a user who just wants it working can accept every
+private remote: none; VS Code: off; Hoply: skip) so a user who just wants it working can accept every
 default in one submission.
 
 ## 2. Resolve the plugin root
@@ -88,6 +89,20 @@ tail -20 /tmp/kaizen-setup.log
   repository toggles have no flag - they are saved as `disabledRepos` in `config.json` on the
   normal `wizard_save_config` path.
 - Never pass `--wizard` from inside this skill - see the note above.
+- Question 8 maps to `--hoply-reminder` (yes) or `--no-hoply-reminder` (skip).
+
+### 3b. Hoply: the token never enters the conversation
+
+Do not ask for the Hoply token in `AskUserQuestion` or in chat, and never pass it through a Bash call of
+yours: anything typed here lands in the session transcript on disk. When question 8 was yes, tell the user to
+run this in their own terminal, where the token is read hidden and stored in `~/.config/hoply` (0600):
+
+```
+bash "$ROOT/install-entry.sh" --hoply        # or: npx -y jb-kaizen --hoply
+```
+
+The token comes from Hoply - Connectors - Claude Code. After it ran, `claude mcp get hoply` shows the server;
+a new Claude Code session picks up the `mcp__hoply__*` tools.
 
 Report the tail of the log to the user: what got installed, what got skipped, and any WARN
 lines.

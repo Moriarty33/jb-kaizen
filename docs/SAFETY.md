@@ -53,3 +53,18 @@ The engine sends nothing anywhere else. Transcripts are read locally with `grep`
    week and tune `SELF_LEARN_BUDGET_USD` / `SELF_LEARN_MODEL`.
 3. Read the first few journal entries. The engine is conservative by design, but it is editing the files
    that shape how Claude works for you - the journal is how you stay in the loop.
+
+## The Hoply pairing
+
+- **Token.** Asked once with hidden input (or `--hoply-token-stdin`), shape-checked (`hpt_` + 43 letters and
+  digits), written to `~/.config/hoply/token` (file 0600, folder 0700). Claude Code gets it only through
+  `~/.config/hoply/headers.sh` (0700), registered as the MCP server's `headersHelper`, so it never lands in
+  `~/.claude.json` or in `claude mcp get` output. `/kaizen:setup` never asks for it in the chat: it sends you to
+  the terminal, because anything typed in a session is stored in its transcript. `uninstall.sh --hoply` removes
+  the server entry and the folder; revoke the token itself in Hoply - Connectors.
+- **What Hoply sees.** Only the MCP calls the `hoply-day` skill makes. Nothing from your sessions, transcripts or
+  the self-learn store is sent; Claude does the wording locally.
+- **Untrusted text.** Meeting titles, notes, project and repo names come from other people and other tools; the
+  skill treats them as data, never as instructions, and writes only after an explicit yes to the printed list.
+- **The nudge** is stdlib Python, reads only local files, never touches the network, and degrades to silence on
+  any error, so it can never block a prompt. The OS reminder only shows a notification.

@@ -4,3 +4,7 @@ __pycache__/
 vscode/*/node_modules/
 vscode/*/dist/
 docs/assets/diagrams/_preview.html
+npm/dist/
+npm/README.md
+npm/LICENSE
+npm/*.tgz

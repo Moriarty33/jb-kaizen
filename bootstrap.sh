@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-command clone path: curl -fsSL <raw-url>/bootstrap.sh | bash
+# One-command clone path: curl -fsSL <raw-url>/bootstrap.sh | bash  (then install-entry.sh asks its two questions)
 set -euo pipefail
 
 JB_KAIZEN_REPO="${JB_KAIZEN_REPO:-https://github.com/Moriarty33/jb-kaizen.git}"
@@ -30,12 +30,9 @@ else
   git clone --depth 1 --branch "$JB_KAIZEN_BRANCH" "$JB_KAIZEN_REPO" "$JB_KAIZEN_DIR"
 fi
 
-step "Handing off to install.sh"
-if [ "$#" -eq 0 ] && [ ! -t 0 ] && [ -t 1 ] && (exec 3</dev/tty) 2>/dev/null; then
-  say "re-attaching terminal for interactive wizard"
-  exec bash "$JB_KAIZEN_DIR/install.sh" --wizard < /dev/tty
+step "Handing off to install-entry.sh"
+# Under `curl | bash` stdin is the script itself, so the two questions read the terminal instead.
+if [ ! -t 0 ] && [ -t 1 ] && (exec 3</dev/tty) 2>/dev/null; then
+  exec bash "$JB_KAIZEN_DIR/install-entry.sh" "$@" < /dev/tty
 fi
-if [ "$#" -eq 0 ] && [ ! -t 0 ]; then
-  set -- --yes
-fi
-exec bash "$JB_KAIZEN_DIR/install.sh" "$@"
+exec bash "$JB_KAIZEN_DIR/install-entry.sh" "$@"

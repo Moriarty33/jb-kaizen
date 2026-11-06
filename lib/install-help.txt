@@ -1,0 +1,43 @@
+install.sh - install the self-learn extension into a Claude Code setup.
+
+  ./install.sh                     setup wizard (in a terminal, no flags): dependencies,
+                                   repo roots, which repos to study, routing hook, nightly
+                                   time, private remote, VS Code companions
+  ./install.sh [--workspace DIRS] [--schedule [HH:MM] | --no-schedule] [--store-remote URL]
+               [--hook | --no-hook] [--vscode LIST] [--aliases|--no-aliases] [--skills LIST]
+               [--hoply-reminder | --no-hoply-reminder] [--plugin] [--wizard] [--yes] [--dry-run]
+
+  --workspace DIRS     root(s) holding your git repos, comma-separated (default ~/workspace).
+                       Discovered repos are registered in the private store; nothing is
+                       written into the projects themselves.
+  --schedule [HH:MM]   install the nightly job (launchd on macOS, systemd --user timer on
+                       Linux; prints a crontab line elsewhere). Default 03:07.
+  --no-schedule        do not (re)install the nightly job, and remember that.
+  --store-remote URL   point the private store at a PRIVATE git remote and push once.
+  --hook / --no-hook   install / skip the UserPromptSubmit routing hook (default: install).
+  --vscode LIST        VS Code companions: claude-launcher,graphify-watch | all | none.
+  --aliases/--no-aliases  install / skip the short /kz-* alias commands (default: install).
+  --skills LIST        clone install only: copy just these skills, comma-separated (default: all).
+                       A skill left out is removed if an earlier run installed it.
+  --hoply-reminder / --no-hoply-reminder
+                       install / remove the workday OS notification for the Hoply day review
+                       (default: leave as is; jb-kaizen's recommended set turns it on).
+  --wizard             ask the questions even when flags or a saved config exist.
+  --yes                never ask: flags, then the saved config, then defaults.
+  --dry-run            print what would change, touch nothing.
+  --plugin             plugin install: skip what the plugin already delivers (skills, hook
+                       registration); still do deps, config.json, store, discovery, scheduler, VS Code.
+
+Precedence on every run: flags > $SELF_LEARN_HOME/config.json > defaults. The effective
+answers are written back to config.json, so the next run - an upgrade, CI, another machine
+restoring the store - repeats them silently. A run with no flags outside a terminal never asks.
+
+Idempotent: re-running upgrades the skills/hook/lib in place, backs up anything it
+overwrites (<file>.bak-<stamp>), and never touches learned state (journal, cursors,
+learned-patterns.md, routing map) once it exists.
+
+Env overrides: CLAUDE_CONFIG_DIR (default ~/.claude), SELF_LEARN_HOME (default
+$CLAUDE_CONFIG_DIR/self-learn).
+
+The one-line installer (npx -y jb-kaizen, brew, curl) runs install-entry.sh, which adds the
+Claude Code plugin, the recommended set and the Hoply connection on top: install-entry.sh --help.

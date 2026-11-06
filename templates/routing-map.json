@@ -40,6 +40,21 @@
         "harden the scheduled",
         "loop contract"
       ]
+    },
+    {
+      "skill": "hoply-day",
+      "hint": "Review and confirm your day in Hoply -> /kaizen:hoply-day (or /hoply-day on a clone install); writes only after your yes.",
+      "keywords": [
+        "review my day",
+        "track my day",
+        "confirm my day",
+        "what did i do today",
+        "hoply day",
+        "що я сьогодні робив",
+        "підтверди день",
+        "переглянь мій день",
+        "заповни день"
+      ]
     }
   ]
 }

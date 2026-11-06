@@ -19,6 +19,7 @@ ok()   { PASS=$((PASS+1)); printf 'ok   %s\n' "$*"; }
 fail() { FAIL=$((FAIL+1)); printf 'FAIL %s\n' "$*"; }
 check() { if "$@" >/dev/null 2>&1; then ok "$*"; else fail "$*"; fi; }
 gitc() { git -c user.name=t -c user.email=t@t -c commit.gpgsign=false "$@"; }
+. "$ROOT/tests/stubs.sh"
 
 # ---- 0. syntax ----
 for f in "$ROOT"/install.sh "$ROOT"/uninstall.sh "$ROOT"/lib/*.sh "$ROOT"/templates/*.sh "$ROOT"/skills/*/scripts/*.sh "$ROOT"/vscode/*.sh; do
@@ -289,6 +290,10 @@ check test -d "$SELF_LEARN_HOME"
 check jq -e '[.hooks.UserPromptSubmit[].hooks[].command] == ["echo other"]' "$CLAUDE_CONFIG_DIR/settings.json"
 check bash "$ROOT/uninstall.sh" --purge-store
 check test ! -d "$SELF_LEARN_HOME"
+
+
+# ---- 10. Hoply pairing, the one-line installer, bundled skills ----
+. "$ROOT/tests/hoply-checks.sh"
 
 echo
 echo "passed: $PASS  failed: $FAIL"

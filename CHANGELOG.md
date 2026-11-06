@@ -3,6 +3,33 @@
 All notable changes to this extension are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.2.0] - 2026-11-06
+
+One line installs it all, and JB Kaizen pairs with [Hoply](https://hoply.work) for a daily time review.
+
+### Added
+- One-line installers: `npx -y jb-kaizen`, `brew install moriarty33/tap/jb-kaizen && jb-kaizen`, and
+  the existing `curl ... bootstrap.sh | bash`. All three run `install-entry.sh`, which asks at most two
+  questions: the recommended set [Y/n] (n = type the skills you want, comma separated; that is a clone
+  install of just those skills, since a plugin always delivers all of its skills), then the Hoply token
+  (hidden, Enter skips). Flags: `--yes`, `--hoply`, `--hoply-token-stdin`, `--no-hoply`, `--hoply-url`, `--ask`.
+- `hoply-day` skill: reads the day from the Hoply MCP server (entries, meetings, GitHub sessions,
+  proposals, sync state), lets the person confirm, fix or dismiss, and writes only after an explicit yes.
+- The 17:15 Europe/Kyiv offer, on two channels sharing one stamp per day: the `hoply-day-nudge.py`
+  hook (SessionStart and UserPromptSubmit, stdlib only, silent and offline unless due) and a workday
+  desktop notification (launchd `StartInterval` 900 on macOS, a `Mon..Fri` systemd timer on Linux).
+- Hoply token handling: `~/.config/hoply/token` (0600) read by a `headers.sh` helper (0700) that Claude
+  Code runs per connection, so the token never lands in `~/.claude.json`.
+- Four bundled general skills: `commit`, `review-code` (with `rules.md`), `fix-pr-comments`, `github`.
+- `install.sh --skills LIST` and `--hoply-reminder / --no-hoply-reminder`, remembered in `config.json`
+  (`skills`, `hoply.reminder`); `uninstall.sh --hoply` removes the MCP entry and `~/.config/hoply`.
+- `npm/` package (`jb-kaizen`, bin `jb-kaizen`) and `brew/jb-kaizen.rb` formula for the tap.
+- `/kaizen:setup` gains an eighth question (connect Hoply) and sends the token to the terminal, never the chat.
+
+### Changed
+- `bootstrap.sh` hands off to `install-entry.sh`; an existing clone install keeps upgrading in place.
+- `install.sh --help` text moved to `lib/install-help.txt`, the skill copy to `lib/install-skills.sh`.
+
 ## [1.1.2] - 2026-09-05
 
 Both invocation forms are supported from here on: the discoverable namespaced commands the

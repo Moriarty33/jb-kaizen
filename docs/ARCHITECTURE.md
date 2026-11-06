@@ -107,3 +107,16 @@ majority is a filter, not an autopilot.
 | Filesystem | `night-guard-settings.json` deny rules (`Read(...)`/`Edit(...)` are the kinds the permission checker matches); cwd forced to the workspace; sessions with an out-of-scope cwd skipped |
 | Data | two-phase cursors; snapshot-before-edit; `sl_atomic_write` refuses to write empty/invalid JSON over a cursor file; `pr-paginate.sh` aborts loudly on an unread stream instead of advancing past it |
 | Completion | `nightly-run.sh` reports `COMPLETION OK` only when today's journal exists; `.partial.md` deliberately does not match |
+
+## One-line installer and the Hoply pairing
+
+| Piece | Role |
+|-------|------|
+| `install-entry.sh` | the flow behind `npx -y jb-kaizen`, the brew `jb-kaizen` command and `bootstrap.sh`: checks for `claude`, asks the two questions (recommended set [Y/n], then the Hoply token), then runs `install.sh` once with the matching flags. Y = plugin install (`plugin marketplace add` + `plugin install`, skipped when present) plus `install.sh --plugin --yes`; n = a clone install of only the typed skills (`install.sh --skills LIST`), because a plugin always delivers all of its skills. An existing clone install keeps upgrading in place |
+| `lib/install-recommended.sh`, `lib/install-hoply.sh` | question 1 and its answer sets; question 2, the token files and `claude mcp add-json hoply ... --scope user` |
+| `lib/install-skills.sh`, `lib/install-reminder.sh` | the clone skill copy (`--skills`, own-skill guard for generic names via the `JB Kaizen` marker); the clone-mode nudge registration and the OS reminder |
+| `hooks/hoply-day-nudge.py` | `SessionStart` + `UserPromptSubmit` (after `skill-router.py`): one offer per workday from `hoply.time` (17:15) in `hoply.timezone` (Europe/Kyiv); `--channel notified` is the same clock for the OS reminder |
+| `templates/hoply-day-notify.sh` + `hoply-day.plist` / `.service` + `.timer` | the desktop notification: launchd `StartInterval` 900 (launchd has no timezone), a `Mon..Fri ... Europe/Kyiv` systemd timer; both call the nudge's clock, window 17:15-21:00 |
+| `$SELF_LEARN_HOME/hoply-day/<date>.{offered,notified,done}` | the shared stamps: one offer per channel per day, none once `hoply-day` wrote `done`; older days are pruned on write |
+| `skills/hoply-day` | reads `getDaySummary` + `getDayProposals`, asks, prints the exact write list, writes only on yes |
+| `npm/`, `brew/` | packaging: `stage.js` copies the installer tree into `npm/dist/` at `prepack`; the formula installs the release tarball into `libexec` behind a `jb-kaizen` wrapper |

@@ -9,6 +9,8 @@ it - evidence or it doesn't ship.
 | Skill | Phrasing (verbatim) | Session | Added |
 |-------|---------------------|---------|-------|
 | self-learn | "learn from the last sessions" | (seed) | install |
+| hoply-day | "review my day" | (seed) | install |
+| hoply-day | "що я сьогодні робив" | (seed) | install |
 
 ## Speech-to-text mishears
 

@@ -1,0 +1,8 @@
+[Unit]
+Description=Hoply day review reminder (JB Kaizen)
+
+[Service]
+Type=oneshot
+Environment=HOME=__HOME__
+Environment=SELF_LEARN_HOME=__SL_HOME__
+ExecStart=/bin/bash __SL_HOME__/scripts/hoply-day-notify.sh __HOPLY_ARG__

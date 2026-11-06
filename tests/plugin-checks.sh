@@ -34,7 +34,7 @@ for f in sd_env sd_cfg sd_cache sd_none; do check "$f"; done
 
 # ---- 2g. bootstrap.sh against a local clone (file://, so the real shallow fetch runs) ----
 H3="$T/home3"; mkdir -p "$T/src" "$H3/workspace"; cp -R "$WS"/. "$H3/workspace"/
-for p in install.sh uninstall.sh bootstrap.sh VERSION .claude-plugin hooks lib skills templates; do cp -R "$ROOT/$p" "$T/src/"; done
+for p in install.sh install-entry.sh uninstall.sh bootstrap.sh VERSION .claude-plugin hooks lib skills templates; do cp -R "$ROOT/$p" "$T/src/"; done
 gitc -C "$T/src" init -q -b main; gitc -C "$T/src" add -A; gitc -C "$T/src" commit -qm "bootstrap fixture"
 bootstrap_run() { HOME="$H3" CLAUDE_CONFIG_DIR="$H3/.claude" SELF_LEARN_HOME="$H3/.claude/self-learn" \
   JB_KAIZEN_REPO="file://$T/src" JB_KAIZEN_DIR="$H3/.jb-kaizen" \

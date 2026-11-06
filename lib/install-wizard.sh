@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # install-wizard.sh - the interactive first-run setup, sourced by install.sh.
+# shellcheck disable=SC2034  # answer variables are read by the sourced lib/ files and install.sh
 #
 # Seven steps: dependencies, repo roots, which repos to study, routing hook, nightly time,
 # private remote, VS Code companions. Each explains itself in one line and Enter keeps the
@@ -36,6 +37,9 @@ wizard_load_config() {
   [ -n "$VSCODE_LAUNCHER" ] || VSCODE_LAUNCHER="$(jq -r 'if .vscode.claudeLauncher == true then 1 else 0 end' "$CONFIG_FILE")"
   [ -n "$VSCODE_GRAPHIFY" ] || VSCODE_GRAPHIFY="$(jq -r 'if .vscode.graphifyWatch == true then 1 else 0 end' "$CONFIG_FILE")"
   [ -n "${ALIASES:-}" ]     || ALIASES="$(jq -r 'if .aliases == false then 0 else 1 end' "$CONFIG_FILE")"
+  [ -n "${SKILLS_CSV:-}" ]  || SKILLS_CSV="$(jq -r '(.skills // []) | join(",")' "$CONFIG_FILE")"
+  [ -n "${HOPLY_REMINDER:-}" ] || HOPLY_REMINDER="$(jq -r 'if .hoply.reminder == true then 1 elif .hoply.reminder == false then 0 else "" end' "$CONFIG_FILE")"
+  HOPLY_TIME="$(jq -r '.hoply.time // ""' "$CONFIG_FILE")"; HOPLY_TZ="$(jq -r '.hoply.timezone // ""' "$CONFIG_FILE")"
   PREV_DISABLED="$(jq -r '(.disabledRepos // [])[]' "$CONFIG_FILE")"
   DISABLED_REPOS="$PREV_DISABLED"
 }
@@ -55,17 +59,21 @@ json_bool() { if [ "$1" = 1 ]; then echo true; else echo false; fi; }
 wizard_save_config() {
   if [ "$DRY" -eq 1 ]; then say "[dry-run] write $CONFIG_FILE"; return 0; fi
   mkdir -p "$SL_HOME"
-  local roots_json disabled_json
+  local roots_json disabled_json hoply_json
+  # .hoply is written by install-entry.sh too, so it is carried over, never rebuilt here.
+  hoply_json="$(jq -c '.hoply // {}' "$CONFIG_FILE" 2>/dev/null || true)"; [ -n "$hoply_json" ] || hoply_json='{}'
+  case "${HOPLY_REMINDER:-}" in 1|0) hoply_json="$(jq -c --argjson r "$(json_bool "$HOPLY_REMINDER")" '.reminder = $r' <<<"$hoply_json")" ;; esac
   roots_json="$(printf '%s\n' "$ROOTS_CSV" | tr ',' '\n' | jq -R . | jq -s .)"
   disabled_json="$(printf '%s\n' "$DISABLED_REPOS" | { grep -v '^$' || true; } | jq -R . | jq -s .)"
   jq -n --argjson roots "$roots_json" --argjson hook "$(json_bool "$WITH_HOOK")" \
         --argjson sched "$(json_bool "$SCHEDULE")" --arg time "$SCHED_TIME" --arg remote "$STORE_REMOTE" \
         --argjson disabled "$disabled_json" --argjson launcher "$(json_bool "$VSCODE_LAUNCHER")" \
         --argjson gw "$(json_bool "$VSCODE_GRAPHIFY")" --argjson aliases "$(json_bool "${ALIASES:-1}")" \
-        --arg ver "$(cat "$SRC/VERSION")" '
+        --arg ver "$(cat "$SRC/VERSION")" --arg skills "${SKILLS_CSV:-}" --argjson hoply "$hoply_json" '
     {version: 1, roots: $roots, disabledRepos: $disabled, hook: $hook,
      schedule: {enabled: $sched, time: $time}, storeRemote: $remote,
      vscode: {claudeLauncher: $launcher, graphifyWatch: $gw}, aliases: $aliases,
+     skills: ($skills | split(",") | map(select(length > 0))), hoply: $hoply,
      installedVersion: $ver, updatedAt: (now | todate)}
   ' > "$CONFIG_FILE"
   say "saved   $CONFIG_FILE"

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Installed by install.sh as ~/Library/LaunchAgents/__HOPLY_LABEL__.plist; launchd has no timezone, so it polls -->
+  <key>Label</key>
+  <string>__HOPLY_LABEL__</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__SL_HOME__/scripts/hoply-day-notify.sh</string>
+    <string>__HOPLY_ARG__</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>900</integer>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>__HOME__</string>
+    <key>SELF_LEARN_HOME</key>
+    <string>__SL_HOME__</string>
+    <key>PATH</key>
+    <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>__SL_HOME__/logs/hoply-day.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__SL_HOME__/logs/hoply-day.err.log</string>
+  <key>RunAtLoad</key>
+  <true/>
+</dict>
+</plist>
