@@ -6,6 +6,8 @@ KZ_MARKED_SKILLS="hoply-day commit review-code fix-pr-comments github"
 
 skill_marked() { case " $KZ_MARKED_SKILLS " in *" $1 "*) return 0 ;; esac; return 1; }
 skill_wanted() { case ",${SKILLS_CSV:-all}," in ,all,|*",$1,"*) return 0 ;; esac; return 1; }
+# Only a skill an earlier --skills pick installed may be taken away; anything else under skills/ is left alone.
+skill_picked_before() { case ",${PREV_SKILLS:-}," in *",$1,"*) return 0 ;; esac; return 1; }
 
 # Every shippable skill name, comma-separated (setup is plugin-only: it needs CLAUDE_PLUGIN_ROOT).
 skills_available() {
@@ -19,6 +21,14 @@ skills_available() {
 
 skills_installed_list() { case "${SKILLS_CSV:-all}" in all) skills_available ;; *) printf '%s' "$SKILLS_CSV" ;; esac; }
 
+# Outside skills/, so Claude Code never loads the backup as a second copy of the skill.
+skill_backup() {
+  local to; to="$CLAUDE_DIR/kaizen-backups/skills/$(basename "$1").bak-$STAMP"
+  run mkdir -p "$(dirname "$to")"
+  run mv "$1" "$to"
+  say "moved   $1 -> $to (not chosen any more)"
+}
+
 install_skills() {
   local sk name dest f rel old d
   if [ "$PLUGIN_MODE" -eq 1 ]; then step "Skills"; say "skip    delivered by the plugin"; return 0; fi
@@ -31,7 +41,9 @@ install_skills() {
     [ "$name" = setup ] && continue
     dest="$CLAUDE_DIR/skills/$name"
     if ! skill_wanted "$name"; then
-      if [ -d "$dest" ] && { ! skill_marked "$name" || sl_is_ours "$dest"; }; then run rm -rf "$dest"; say "removed $dest (not chosen)"; fi
+      if [ -d "$dest" ] && skill_picked_before "$name" && { ! skill_marked "$name" || sl_is_ours "$dest"; }; then
+        skill_backup "$dest"
+      fi
       continue
     fi
     if skill_marked "$name" && [ -d "$dest" ] && ! sl_is_ours "$dest"; then

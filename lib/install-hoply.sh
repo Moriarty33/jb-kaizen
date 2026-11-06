@@ -19,22 +19,24 @@ hoply_read_token() {
 # The token lives in its own 0600 file; Claude Code runs headers.sh per connection, so ~/.claude.json never holds it.
 hoply_write_files() {
   case "$HOPLY_DIR" in *"'"*|*[[:space:]]*) echo "the Hoply config path may not contain quotes or spaces: $HOPLY_DIR" >&2; return 1 ;; esac
-  ( umask 077; mkdir -p "$HOPLY_DIR"; printf '%s\n' "$1" > "$HOPLY_DIR/token" )
-  chmod 700 "$HOPLY_DIR"; chmod 600 "$HOPLY_DIR/token"
-  cat > "$HOPLY_DIR/headers.sh" <<EOF
+  ( umask 077 && mkdir -p "$HOPLY_DIR" && printf '%s\n' "$1" > "$HOPLY_DIR/token" ) || return 1
+  chmod 700 "$HOPLY_DIR" && chmod 600 "$HOPLY_DIR/token" || return 1
+  cat > "$HOPLY_DIR/headers.sh" <<EOF || return 1
 #!/bin/sh
 t="\$(cat '$HOPLY_DIR/token')" || exit 1
 printf '{"Authorization":"Bearer %s"}\n' "\$t"
 EOF
-  chmod 700 "$HOPLY_DIR/headers.sh"
+  chmod 700 "$HOPLY_DIR/headers.sh" || return 1
   say "saved   $HOPLY_DIR/token (0600) and headers.sh (0700)"
 }
 
 hoply_register() {
   local url="$1" json out
-  json="$(jq -cn --arg url "$url" --arg h "$HOPLY_DIR/headers.sh" '{type: "http", url: $url, headersHelper: $h}')"
+  json="$(jq -cn --arg url "$url" --arg h "$HOPLY_DIR/headers.sh" '{type: "http", url: $url, headersHelper: $h}')" || return 1
   "$CLAUDE_BIN" mcp remove hoply --scope user >/dev/null 2>&1 || true
-  "$CLAUDE_BIN" mcp add-json hoply "$json" --scope user >/dev/null
+  "$CLAUDE_BIN" mcp add-json hoply "$json" --scope user >/dev/null || {
+    echo "claude mcp add-json failed - the Hoply MCP server was not added; fix the error above, then run: npx -y jb-kaizen --hoply" >&2
+    return 1; }
   out="$("$CLAUDE_BIN" mcp get hoply 2>&1)" || { echo "claude mcp get hoply failed after the add - check: claude mcp list" >&2; return 1; }
   say "added   MCP server hoply -> $url (user scope)"
   case "$out" in
@@ -45,13 +47,13 @@ hoply_register() {
 
 hoply_save_config() {
   local cfg="$SL_HOME/config.json" tmp
-  mkdir -p "$SL_HOME"; [ -f "$cfg" ] || echo '{}' > "$cfg"
+  mkdir -p "$SL_HOME" || return 1; [ -f "$cfg" ] || echo '{}' > "$cfg"
   jq -e . "$cfg" >/dev/null 2>&1 || { say "WARN    $cfg is not valid JSON - Hoply settings not saved there"; return 0; }
   tmp="$(mktemp)"
   jq --arg url "$1" '.hoply = ((.hoply // {}) + {url: $url, connected: true})' "$cfg" > "$tmp" && mv "$tmp" "$cfg"
 }
 
-# $1 = ask (hidden prompt) | stdin (one line, for scripts and tests). Returns 2 when a scripted token is malformed.
+# $1 = ask (hidden prompt) | stdin (one line, for scripts and tests). Returns 2 for a malformed scripted token, 1 when a write fails.
 hoply_step() {
   local token="" url="${HOPLY_URL:-$HOPLY_DEFAULT_URL}"
   step "Hoply"
@@ -67,10 +69,10 @@ hoply_step() {
     fi
     if ! hoply_token_valid "$token"; then say "skip    nothing written (connect later: npx -y jb-kaizen --hoply)"; return 0; fi
   fi
-  hoply_write_files "$token"
+  hoply_write_files "$token" || return 1
   token=""
-  hoply_register "$url"
-  hoply_save_config "$url"
+  hoply_register "$url" || return 1
+  hoply_save_config "$url" || return 1
   HOPLY_CONNECTED=1
 }
 

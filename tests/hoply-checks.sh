@@ -1,4 +1,4 @@
-# shellcheck shell=bash disable=SC2154  # sourced by smoke.sh after tests/stubs.sh; uses its harness helpers
+# shellcheck shell=bash disable=SC2154,SC2034  # sourced by smoke.sh after tests/stubs.sh; uses its harness helpers and sets lib inputs
 # Hoply pairing and the one-line installer: nudge clock, notify script, install-entry flows, bundled skills, leaks.
 
 # ---- 10a. syntax, manifests, versions ----
@@ -131,6 +131,40 @@ check test ! -d "$H6/.claude/skills/hoply-day"; check test ! -d "$H6/.claude/ski
 check test ! -f "$H6/.claude/hooks/hoply-day-nudge.py"; check test ! -d "$H6/.config/hoply"
 check jq -e '.hooks == null' "$H6/.claude/settings.json"
 check grep -q '^mcp remove hoply --scope user' "$STUB_LOG/claude.log"
+
+# ---- 10e2. a refused `claude mcp add-json` fails the run and never reads as connected ----
+touch "$STUB_LOG/fail-add-json"
+for mode in --hoply-token-stdin --ask; do
+  H7="$T/home7$mode"; rc7=0
+  out7="$(printf '%s\n' "$TOKEN" | entry "$H7" --hoply "$mode" 2>&1)" || rc7=$?
+  check test "$rc7" -ne 0
+  if grep -qi 'connected' <<<"$out7"; then fail "add-json refused ($mode): output claims connected"; else ok "add-json refused ($mode): not reported connected"; fi
+  not_connected7() { ! jq -e '.hoply.connected == true' "$H7/.claude/self-learn/config.json" >/dev/null 2>&1; }
+  check not_connected7
+done
+rm -f "$STUB_LOG/fail-add-json"
+
+# ---- 10e3. a narrower pick moves only skills an earlier pick installed, learned state intact ----
+LP="references/learned-patterns.md"
+H8="$T/home8"; printf '%s\n' n "self-learn,commit" "" | entry "$H8" --ask > "$T/entry-h8a.log" 2>&1
+echo "LEARNED-MARK" >> "$H8/.claude/skills/self-learn/$LP"
+printf '%s\n' n "commit" "" | entry "$H8" --ask > "$T/entry-h8b.log" 2>&1; check test "$?" = 0
+check test ! -d "$H8/.claude/skills/self-learn"
+backed_up() { grep -q LEARNED-MARK "$(ls -d "$H8"/.claude/kaizen-backups/skills/self-learn.bak-* | head -1)/$LP"; }
+check backed_up
+check bash -c '! ls -d "$1"/.claude/skills/*.bak-* >/dev/null 2>&1' _ "$H8"   # never a second loadable copy under skills/
+H9="$T/home9"; mkdir -p "$H9/workspace"
+HOME="$H9" CLAUDE_CONFIG_DIR="$H9/.claude" SELF_LEARN_HOME="$H9/.claude/self-learn" bash "$ROOT/install.sh" --yes --workspace "$H9/workspace" > "$T/h9.log" 2>&1
+echo "LEARNED-MARK" >> "$H9/.claude/skills/self-learn/$LP"
+printf '%s\n' n "commit" "" | entry "$H9" --ask > "$T/entry-h9.log" 2>&1
+check grep -q LEARNED-MARK "$H9/.claude/skills/self-learn/$LP"   # no earlier pick named it: left in place
+
+# ---- 10e4. systemd timer falls back to Europe/Kiev on old tzdata ----
+tz_fallback() { local zi="$T/zi"; mkdir -p "$zi/Europe"; touch "$zi/Europe/Kiev"
+  ( SRC="$ROOT"; PLUGIN_MODE=0; SL_HOME="$T/x"; HOPLY_TZ=""; . "$ROOT/lib/install-reminder.sh"
+    TZDIR="$zi" reminder_render "$ROOT/templates/hoply-day.timer" "$T/kiev.timer" )
+  grep -q '17:15:00 Europe/Kiev$' "$T/kiev.timer"; }
+check tz_fallback
 
 # ---- 10f. npm package: only the whitelisted tree ----
 if command -v npm >/dev/null 2>&1; then

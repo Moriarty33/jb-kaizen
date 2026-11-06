@@ -82,7 +82,7 @@ fi
 
 if [ "$HOPLY_SKIP" -eq 0 ]; then
   if [ "$HOPLY_STDIN" -eq 1 ]; then hoply_step stdin || exit $?
-  elif [ "$ASK" -eq 1 ]; then hoply_step ask
+  elif [ "$ASK" -eq 1 ]; then hoply_step ask || exit $?
   elif [ "$HOPLY_ONLY" -eq 1 ]; then echo "--hoply asks for the token: run it in a terminal, or pipe it with --hoply-token-stdin" >&2; exit 2
   fi
 fi

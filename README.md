@@ -89,7 +89,7 @@ Optional: GitHub CLI `gh` (authenticated) for PR-review mining, `npx ccusage` fo
 ```bash
 npx -y jb-kaizen                                                   # Node 18+
 brew install moriarty33/tap/jb-kaizen && jb-kaizen                 # Homebrew
-curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/v1.2.0/bootstrap.sh | bash
 ```
 
 All three run the same installer, and it asks two things only:
@@ -168,7 +168,7 @@ then `/plugin uninstall kaizen@jb-kaizen`.
 | `~/.claude/skills/{hoply-day,commit,review-code,fix-pr-comments,github}/` | clone/bootstrap path: the Hoply day review and the [bundled skills](#bundled-skills); a same-named skill of yours is kept |
 | `~/.claude/hooks/hoply-day-nudge.py` | clone/bootstrap path: `SessionStart` + `UserPromptSubmit` hook offering the day review once per workday from 17:15 Europe/Kyiv - the plugin ships it in `hooks/hooks.json` |
 | `~/.config/hoply/token`, `headers.sh` | the Hoply token (0600) and the `headersHelper` that sends it; `uninstall.sh --hoply` removes both |
-| `~/Library/LaunchAgents/com.self-learn.hoply-day.plist` | the workday desktop reminder (Linux: `self-learn-hoply-day.timer`); `--no-hoply-reminder` removes it |
+| `~/Library/LaunchAgents/com.self-learn.hoply-day.plist` | the workday desktop reminder (Linux: `self-learn-hoply-day.timer`); `--no-hoply-reminder` removes it and mutes the in-session offer |
 | `~/.claude/lib/claude-retry.sh` | bounded retries, wall-clock budget, process-group kill, auth-fail short-circuit |
 | `~/.claude/lib/skill-dir.sh` | resolves the on-disk skill dir for both the clone/bootstrap and plugin layouts; sourced by the nightly runner and the skill scripts |
 | `~/.claude/night-guard-settings.json` | deny-list passed to the nightly run |
@@ -188,7 +188,8 @@ then `/plugin uninstall kaizen@jb-kaizen`.
 sessions, Jira links - and proposes what is missing. Paired with JB Kaizen, it closes the day for you:
 
 - **At 17:15 Europe/Kyiv on workdays** Claude Code offers the review once (a hook, silent and offline until
-  then), and a desktop notification says the same when no session is open. Both stop once the day is done.
+  then), and a desktop notification says the same once that day, whether or not a session is open. Both stop
+  once the day is done; `--no-hoply-reminder` mutes both.
 - **`/kaizen:hoply-day`** shows what is tracked, what is not synced yet, and the open proposals; you confirm,
   fix or dismiss them, and nothing is written until you say yes to the exact list.
 - **Connect:** in Hoply open Connectors - Claude Code, copy the token, and paste it when the installer asks

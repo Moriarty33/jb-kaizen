@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-command clone path: curl -fsSL <raw-url>/bootstrap.sh | bash  (then install-entry.sh asks its two questions)
+# curl -fsSL <raw-url>/bootstrap.sh | bash - clones or updates ~/.jb-kaizen, then install-entry.sh asks its two questions.
 set -euo pipefail
 
 JB_KAIZEN_REPO="${JB_KAIZEN_REPO:-https://github.com/Moriarty33/jb-kaizen.git}"

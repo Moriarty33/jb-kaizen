@@ -74,7 +74,7 @@ Memory проєкту - найдорожчий вхід: `MEMORY.md` ванта�
 ```bash
 npx -y jb-kaizen                                                   # Node 18+
 brew install moriarty33/tap/jb-kaizen && jb-kaizen                 # Homebrew
-curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/v1.2.0/bootstrap.sh | bash
 ```
 
 Усі три запускають той самий інсталятор, і він питає лише дві речі:
@@ -150,7 +150,8 @@ cd jb-kaizen
 посилання на Jira - і пропонує те, чого бракує. У парі з JB Kaizen він закриває день за вас:
 
 - **О 17:15 за Києвом у робочі дні** Claude Code один раз пропонує переглянути день (хук, тихий і офлайн до
-  того часу), а коли сесії немає - те саме каже сповіщення на робочому столі. Обидва замовкають, щойно день закрито.
+  того часу), а сповіщення на робочому столі каже те саме раз за день - байдуже, відкрита сесія чи ні. Обидва
+  замовкають, щойно день закрито; `--no-hoply-reminder` вимикає обидва.
 - **`/kaizen:hoply-day`** показує, що вже записано, що ще не синхронізовано, і відкриті пропозиції; ви
   підтверджуєте, правите або відхиляєте їх, і нічого не записується, поки ви не скажете «так» точному списку.
 - **Підключення:** у Hoply відкрийте Connectors - Claude Code, скопіюйте токен і вставте, коли інсталятор
@@ -187,7 +188,7 @@ cd jb-kaizen
 | `~/.claude/skills/{hoply-day,commit,review-code,fix-pr-comments,github}/` | шлях клонування/bootstrap: перегляд дня Hoply і [вбудовані скіли](#вбудовані-скіли); ваш скіл з такою самою назвою лишається |
 | `~/.claude/hooks/hoply-day-nudge.py` | шлях клонування/bootstrap: хук `SessionStart` + `UserPromptSubmit`, що раз на робочий день з 17:15 за Києвом пропонує переглянути день - плагін приносить його в `hooks/hooks.json` |
 | `~/.config/hoply/token`, `headers.sh` | токен Hoply (0600) і `headersHelper`, що його надсилає; `uninstall.sh --hoply` прибирає обидва |
-| `~/Library/LaunchAgents/com.self-learn.hoply-day.plist` | сповіщення в робочі дні (Linux: `self-learn-hoply-day.timer`); `--no-hoply-reminder` прибирає його |
+| `~/Library/LaunchAgents/com.self-learn.hoply-day.plist` | сповіщення в робочі дні (Linux: `self-learn-hoply-day.timer`); `--no-hoply-reminder` прибирає його і вимикає пропозицію в сесії |
 | `~/.claude/lib/claude-retry.sh` | обмежені ретраї, бюджет часу, kill усієї process group, стоп на auth-помилці |
 | `~/.claude/lib/skill-dir.sh` | резолвить теку скіла на диску для обох варіантів - клонування/bootstrap і плагіна; підключається нічним раннером і скриптами скілів |
 | `~/.claude/night-guard-settings.json` | deny-list для нічного запуску |

@@ -22,6 +22,7 @@ install.sh - install the self-learn extension into a Claude Code setup.
   --hoply-reminder / --no-hoply-reminder
                        install / remove the workday OS notification for the Hoply day review
                        (default: leave as is; jb-kaizen's recommended set turns it on).
+                       --no-hoply-reminder also mutes the in-session 17:15 offer (hoply.reminder=false).
   --wizard             ask the questions even when flags or a saved config exist.
   --yes                never ask: flags, then the saved config, then defaults.
   --dry-run            print what would change, touch nothing.

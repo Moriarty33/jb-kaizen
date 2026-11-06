@@ -9,7 +9,7 @@ cat > "$STUB/claude" <<EOF
 printf '%s\n' "\$*" >> "$STUB_LOG/claude.log"
 case "\$1 \$2" in
   "mcp get") [ -f "$STUB_LOG/mcp-hoply" ] || exit 1; printf 'hoply:\n  Status: connected\n' ;;
-  "mcp add-json") touch "$STUB_LOG/mcp-hoply" ;;
+  "mcp add-json") if [ -f "$STUB_LOG/fail-add-json" ]; then echo "stub: add-json refused" >&2; exit 1; fi; touch "$STUB_LOG/mcp-hoply" ;;
   "mcp remove") rm -f "$STUB_LOG/mcp-hoply" ;;
   "plugin marketplace") if [ "\$3" = add ]; then touch "$STUB_LOG/mkt-kaizen"; elif [ -f "$STUB_LOG/mkt-kaizen" ]; then echo jb-kaizen; fi ;;
   "plugin list") if [ -f "$STUB_LOG/plugin-kaizen" ]; then echo "kaizen@jb-kaizen"; fi ;;

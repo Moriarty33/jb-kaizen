@@ -49,11 +49,19 @@ nudge_hook_apply() {
   fi
 }
 
+# Older tzdata only knows the Kiev spelling; systemd refuses an unknown zone in OnCalendar.
+reminder_tz() {
+  local tz="${HOPLY_TZ:-Europe/Kyiv}" zi="${TZDIR:-/usr/share/zoneinfo}"
+  if [ "$tz" = Europe/Kyiv ] && [ ! -e "$zi/Europe/Kyiv" ] && [ -e "$zi/Europe/Kiev" ]; then tz="Europe/Kiev"; fi
+  printf '%s' "$tz"
+}
+
 reminder_render() {
-  local from="$1" to="$2" arg=""
+  local from="$1" to="$2" arg="" tz
   [ "$PLUGIN_MODE" -eq 1 ] && arg="--plugin"
+  tz="$(reminder_tz)"
   sed -e "s|__HOPLY_LABEL__|$HOPLY_LABEL|g" -e "s|__SL_HOME__|$SL_HOME|g" -e "s|__HOME__|$HOME|g" \
-      -e "s|__HOPLY_ARG__|$arg|g" -e "s|__HOPLY_TIME__|${HOPLY_TIME:-17:15}|g" -e "s|__HOPLY_TZ__|${HOPLY_TZ:-Europe/Kyiv}|g" "$from" > "$to"
+      -e "s|__HOPLY_ARG__|$arg|g" -e "s|__HOPLY_TIME__|${HOPLY_TIME:-17:15}|g" -e "s|__HOPLY_TZ__|$tz|g" "$from" > "$to"
 }
 
 # Writes $2 from template $1 only when it changed; returns 0 when it did.
