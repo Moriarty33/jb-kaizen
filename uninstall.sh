@@ -78,6 +78,10 @@ if [ "$HOPLY" -eq 1 ]; then
     run "${CLAUDE_BIN:-claude}" mcp remove hoply --scope user >/dev/null 2>&1 || true
     say "signed out of Hoply and removed MCP server hoply"
   fi
+  CFG="$SL_HOME/config.json"
+  if [ -f "$CFG" ] && [ "$DRY" -eq 0 ] && jq -e '.hoply' "$CFG" >/dev/null 2>&1; then
+    tmp="$(mktemp)"; jq '.hoply.connected = false' "$CFG" > "$tmp" && mv "$tmp" "$CFG"; say "marked Hoply disconnected in $CFG"
+  fi
   HOPLY_DIR="${HOPLY_CONFIG_DIR:-$HOME/.config/hoply}"
   [ -d "$HOPLY_DIR" ] && { run rm -rf "$HOPLY_DIR"; say "removed $HOPLY_DIR (token and headers helper)"; }
 fi

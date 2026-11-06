@@ -196,9 +196,9 @@ sessions, Jira links - and proposes what is missing. Paired with JB Kaizen, it c
 - **Connect:** answer Y (or later: `npx -y jb-kaizen --hoply`). Hoply is added as a remote MCP server and
   `claude mcp login hoply` opens your browser to sign in with your Hoply account; signed out later, Claude Code
   shows `/mcp` -> hoply -> Authenticate. CI and headless machines only: `HOPLY_TOKEN=hpt_... npx -y jb-kaizen --yes`.
-- **Privacy:** Claude Code keeps the sign-in itself; there is no token in a file or in the chat. Hoply sees only
-  the MCP calls, nothing from your sessions; Claude does the wording locally, and Hoply's own text (meeting
-  titles, notes) is treated as data, never as instructions.
+- **Privacy:** Claude Code keeps the sign-in itself; there is no token for you to copy or store, and none in
+  the chat. Hoply sees only the MCP calls, nothing from your sessions; Claude does the wording locally, and
+  Hoply's own text (meeting titles, notes) is treated as data, never as instructions.
 
 ## Bundled skills
 

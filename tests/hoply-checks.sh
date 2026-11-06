@@ -11,6 +11,7 @@ check jq -e '.hooks.UserPromptSubmit[0].hooks[1].command | test("hoply-day-nudge
 check jq -e --arg v "$VER" '.version == $v and .name == "jb-kaizen" and .bin["jb-kaizen"] == "bin/jb-kaizen.js"' "$ROOT/npm/package.json"
 check grep -q "^## \[$VER\]" "$ROOT/CHANGELOG.md"
 check grep -q "refs/tags/v$VER.tar.gz" "$ROOT/brew/jb-kaizen.rb"
+check grep -q "JB_KAIZEN_BRANCH:-v$VER}" "$ROOT/bootstrap.sh"                 # curl clones the tag the README pins
 check test "$(bash "$ROOT/install-entry.sh" --version)" = "$VER"
 if command -v node >/dev/null 2>&1; then check test "$(node "$ROOT/npm/bin/jb-kaizen.js" --version)" = "$VER"; fi
 for f in install.sh install-entry.sh tests/smoke.sh tests/hoply-checks.sh README.md README.uk.md lib/install-wizard.sh; do check test "$(wc -l < "$ROOT/$f" | tr -d ' ')" -le 300; done
@@ -81,6 +82,10 @@ check notify 2026-11-20T15:30:00+00:00
 check grep -q 'display notification "Your day is ready: open Claude Code and type /kaizen:hoply-day" with title "Hoply"' "$STUB_LOG/osascript.log"
 check notify 2026-11-20T15:45:00+00:00
 check test "$(grep -c 'display notification' "$STUB_LOG/osascript.log")" = "1"
+mv "$NH/hoply/token" "$NH/hoply/token.off"; echo '{"hoply":{"connected":true}}' > "$NH/sl/config.json"   # browser sign-in: no token file
+check silent 2026-11-24T15:14:00+00:00; check fires 2026-11-24T15:20:00+00:00; check silent 2026-11-24T16:00:00+00:00
+echo '{"hoply":{"connected":false}}' > "$NH/sl/config.json"; check silent 2026-11-25T15:20:00+00:00   # after uninstall.sh --hoply
+rm -f "$NH/sl/config.json"; mv "$NH/hoply/token.off" "$NH/hoply/token"
 
 # ---- 10e. install-entry: recommended set, Hoply browser sign-in, CI token, picked skills, no claude ----
 TOKEN="hpt_0123456789abcdefghijABCDEFGHIJklmnopqrstuvw"
@@ -160,6 +165,11 @@ check test ! -d "$H6/.claude/skills/hoply-day"; check test ! -d "$H6/.claude/ski
 check test ! -f "$H6/.claude/hooks/hoply-day-nudge.py"; check test ! -d "$H6/.config/hoply"
 check jq -e '.hooks == null' "$H6/.claude/settings.json"
 check logged 'mcp logout hoply'; check logged 'mcp remove hoply --scope user'
+check jq -e '.hoply.connected == false' "$H6/.claude/self-learn/config.json"   # the nudge goes quiet
+: > "$STUB_LOG/claude.log"                                       # /kaizen:setup path: inside a session, never an interactive sign-in
+out6="$(CLAUDECODE=1 HOME="$H6" CLAUDE_CONFIG_DIR="$H6/.claude" SELF_LEARN_HOME="$H6/.claude/self-learn" bash "$ROOT/install-entry.sh" --hoply 2>&1 < /dev/null)"
+check grep -q 'next    open Claude Code and run /mcp -> hoply -> Authenticate' <<<"$out6"; check not_logged 'mcp login'
+check jq -e '.hoply.connected == true and .hoply.auth == "oauth"' "$H6/.claude/self-learn/config.json"
 
 # ---- 10e2. a refused registration fails the run and never reads as connected ----
 refused() { local flag="$1" h="$2" rc=0 out; shift 2; touch "$STUB_LOG/$flag"

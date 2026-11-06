@@ -54,7 +54,10 @@ hoply_has_login() {
 
 # `claude mcp login` refuses to run without a terminal, so a piped stdin borrows /dev/tty when there is one.
 hoply_tty() {
-  if [ -t 0 ] || [ "${KAIZEN_TEST_MODE:-}" = 1 ]; then echo stdin; return 0; fi
+  [ "${KAIZEN_TEST_MODE:-}" = 1 ] && { echo stdin; return 0; }
+  # Inside a Claude Code session (a skill's Bash) an interactive login would fight the session for the terminal.
+  [ "${CLAUDECODE:-}" = 1 ] && return 1
+  if [ -t 0 ]; then echo stdin; return 0; fi
   if (exec 3</dev/tty) 2>/dev/null; then echo devtty; return 0; fi
   return 1
 }

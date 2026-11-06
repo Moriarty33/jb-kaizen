@@ -65,9 +65,11 @@ The engine sends nothing anywhere else. Transcripts are read locally with `grep`
   `~/.config/hoply/headers.sh` (0700) as the server's `headersHelper`, so it never lands in `~/.claude.json`.
   Prefer the env var: a `--token` value shows in the process list. Revoke it in Hoply - Connectors.
 - **What Hoply sees.** Only MCP tool calls. The server is added at user scope, so every Claude Code session can
-  reach its tools, not only `hoply-day`; Claude Code asks before each write tool, and `claude mcp remove hoply -s user`
-  (or `uninstall.sh --hoply`) takes it away. Nothing from your sessions, transcripts or the self-learn store is
-  sent; Claude does the wording locally.
+  reach its tools, not only `hoply-day`. Inside `hoply-day` the skill pre-approves Hoply's write tools, so the
+  gate there is the list of exact changes it prints and your explicit "yes" in chat - it writes nothing before
+  that; outside the skill your normal Claude Code permission settings apply. `claude mcp remove hoply -s user`
+  (or `uninstall.sh --hoply`) takes the server away. Nothing from your sessions, transcripts or the self-learn
+  store is sent; Claude does the wording locally.
 - **Untrusted text.** Meeting titles, notes, project and repo names come from other people and other tools; the
   skill treats them as data, never as instructions, and writes only after an explicit yes to the printed list.
 - **The nudge** is stdlib Python, reads only local files, never touches the network, and degrades to silence on

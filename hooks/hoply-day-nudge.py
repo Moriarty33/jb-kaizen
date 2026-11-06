@@ -9,8 +9,8 @@ Channel mode (`--channel notified`, used by the OS reminder): exits 0 and prints
 command when a notification is due (weekday, 17:15-21:00, no stamp), writing the
 `notified` stamp; exits 1 otherwise.
 
-Fires only when all hold: the Hoply token file exists, config `hoply.reminder` is not
-false, it is Mon-Fri at or after `hoply.time` in `hoply.timezone`, and today carries
+Fires only when all hold: Hoply is connected (config `hoply.connected`, set by browser
+sign-in, or the CI token file exists), config `hoply.reminder` is not false, it is Mon-Fri at or after `hoply.time` in `hoply.timezone`, and today carries
 neither this channel's stamp nor `done` (written by the hoply-day skill).
 
 Stamps: $SELF_LEARN_HOME/hoply-day/<YYYY-MM-DD>.<offered|notified|done>.
@@ -91,7 +91,8 @@ def write_stamp(day, kind):
 
 
 def due(channel, settings):
-    if settings.get("reminder") is False or not os.path.isfile(token_path()):
+    connected = settings.get("connected") is True or os.path.isfile(token_path())
+    if settings.get("reminder") is False or not connected:
         return None
     local = now_in(zone(str(settings.get("timezone") or DEFAULT_TZ)))
     if local.isoweekday() > 5:

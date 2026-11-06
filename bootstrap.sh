@@ -4,7 +4,8 @@ set -euo pipefail
 
 JB_KAIZEN_REPO="${JB_KAIZEN_REPO:-https://github.com/Moriarty33/jb-kaizen.git}"
 JB_KAIZEN_DIR="${JB_KAIZEN_DIR:-$HOME/.jb-kaizen}"
-JB_KAIZEN_BRANCH="${JB_KAIZEN_BRANCH:-main}"
+# The release this script ships with (tests/hoply-checks.sh keeps it equal to VERSION); a branch name works too.
+JB_KAIZEN_REF="${JB_KAIZEN_REF:-${JB_KAIZEN_BRANCH:-v1.2.0}}"
 
 say()  { printf '  %s\n' "$*"; }
 step() { printf '\n==> %s\n' "$*"; }
@@ -20,14 +21,13 @@ if [ -d "$JB_KAIZEN_DIR/.git" ]; then
     echo "$JB_KAIZEN_DIR has local changes - refusing to reset; move it aside or set JB_KAIZEN_DIR" >&2
     exit 1
   }
-  say "fetching $JB_KAIZEN_BRANCH from $JB_KAIZEN_REPO"
+  say "fetching $JB_KAIZEN_REF from $JB_KAIZEN_REPO"
   git -C "$JB_KAIZEN_DIR" remote set-url origin "$JB_KAIZEN_REPO"
-  git -C "$JB_KAIZEN_DIR" fetch --depth 1 origin "$JB_KAIZEN_BRANCH"
-  git -C "$JB_KAIZEN_DIR" checkout -q "$JB_KAIZEN_BRANCH"
-  git -C "$JB_KAIZEN_DIR" reset --hard "origin/$JB_KAIZEN_BRANCH"
+  git -C "$JB_KAIZEN_DIR" fetch --depth 1 origin "$JB_KAIZEN_REF"
+  git -C "$JB_KAIZEN_DIR" checkout -q --detach FETCH_HEAD
 else
   step "Cloning $JB_KAIZEN_REPO into $JB_KAIZEN_DIR"
-  git clone --depth 1 --branch "$JB_KAIZEN_BRANCH" "$JB_KAIZEN_REPO" "$JB_KAIZEN_DIR"
+  git clone -q --depth 1 --branch "$JB_KAIZEN_REF" "$JB_KAIZEN_REPO" "$JB_KAIZEN_DIR"
 fi
 
 step "Handing off to install-entry.sh"

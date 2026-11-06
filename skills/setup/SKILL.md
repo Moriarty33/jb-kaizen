@@ -93,10 +93,13 @@ tail -20 /tmp/kaizen-setup.log
 
 ### 3b. Hoply: sign-in in the browser, never a token in the chat
 
-When question 8 was yes, add the server (no secret involved, safe to run from here):
+When question 8 was yes, connect it through the installer (no secret involved, safe to run from here: inside a
+Claude Code session it never starts an interactive sign-in, it only adds the server, records the connection in
+`config.json` and prints the sign-in line):
 
 ```sh
-claude mcp add --transport http --scope user hoply https://app.hoply.work/mcp
+bash "$ROOT/install-entry.sh" --hoply > /tmp/kaizen-hoply.log 2>&1
+tail -8 /tmp/kaizen-hoply.log
 ```
 
 Then tell the user to sign in with their Hoply account: in Claude Code run `/mcp`, pick `hoply`, choose
