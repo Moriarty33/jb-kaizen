@@ -33,7 +33,7 @@ language the user is writing in. The eight, with the meaning to show the user fo
 | 5 | Nightly run | run every night, and at what local time (launchd / systemd --user / crontab, whichever the OS uses) |
 | 6 | Private remote | a PRIVATE git remote to back the store up to - it holds project names, paths and distilled feedback, never push it anywhere public |
 | 7 | VS Code companions | install `claude-launcher` and/or `graphify-watch` (bundled, MIT, installed through the `code` CLI) |
-| 8 | Hoply | connect Hoply for the 17:15 day review (`/kaizen:hoply-day`) and the workday reminder - yes or skip; never the token itself (section 3b) |
+| 8 | Hoply | connect Hoply for the 17:15 day review (`/kaizen:hoply-day`) and the workday reminder - yes or skip; sign-in in the browser, never a token (section 3b) |
 
 The install also adds the four short aliases `/kz-setup`, `/kz-learn`, `/kz-audit`, `/kz-balance`
 to `~/.claude/skills/`. If the user says they do not want them, append `--no-aliases` to the
@@ -91,21 +91,18 @@ tail -20 /tmp/kaizen-setup.log
 - Never pass `--wizard` from inside this skill - see the note above.
 - Question 8 maps to `--hoply-reminder` (yes) or `--no-hoply-reminder` (skip).
 
-### 3b. Hoply: the token never enters the conversation
+### 3b. Hoply: sign-in in the browser, never a token in the chat
 
-Do not ask for the Hoply token in `AskUserQuestion` or in chat, and never pass it through a Bash call of
-yours: anything typed here lands in the session transcript on disk. When question 8 was yes, tell the user to
-run this in their own terminal, where the token is read hidden and stored in `~/.config/hoply` (0600):
+When question 8 was yes, add the server (no secret involved, safe to run from here):
 
-```
-bash "$ROOT/install-entry.sh" --hoply        # or: npx -y jb-kaizen --hoply
+```sh
+claude mcp add --transport http --scope user hoply https://app.hoply.work/mcp
 ```
 
-The token comes from Hoply - Connectors - Claude Code. After it ran, `claude mcp get hoply` shows the server;
-a new Claude Code session picks up the `mcp__hoply__*` tools.
-
-Report the tail of the log to the user: what got installed, what got skipped, and any WARN
-lines.
+Then tell the user to sign in with their Hoply account: in Claude Code run `/mcp`, pick `hoply`, choose
+**Authenticate** (or `claude mcp login hoply` in their own terminal). Never ask for a token or a password in
+`AskUserQuestion` or in chat: anything typed in a session is stored in its transcript. A personal token is only
+for CI and headless machines (`HOPLY_TOKEN=... npx -y jb-kaizen --yes`).
 
 ## 4. Print the terminal fallback
 

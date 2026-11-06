@@ -11,22 +11,23 @@ One line installs it all, and JB Kaizen pairs with [Hoply](https://hoply.work) f
 - One-line installers: `npx -y jb-kaizen`, `brew install moriarty33/tap/jb-kaizen && jb-kaizen`, and
   `curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/v1.2.0/bootstrap.sh | bash`. All three run `install-entry.sh`, which asks at most two
   questions: the recommended set [Y/n] (n = type the skills you want, comma separated; that is a clone
-  install of just those skills, since a plugin always delivers all of its skills), then the Hoply token
-  (hidden, Enter skips). Flags: `--yes`, `--hoply`, `--hoply-token-stdin`, `--no-hoply`, `--hoply-url`, `--ask`.
+  install of just those skills, since a plugin always delivers all of its skills), then "Connect Hoply?
+  [Y/n]": the MCP server is added with no header and `claude mcp login hoply` opens the browser to sign in.
+  Flags: `--yes`, `--hoply`, `--no-hoply`, `--hoply-url`, `--ask`; `--token` / `HOPLY_TOKEN` for CI only.
 - `hoply-day` skill: reads the day from the Hoply MCP server (entries, meetings, GitHub sessions,
   proposals, sync state), lets the person confirm, fix or dismiss, and writes only after an explicit yes.
 - The 17:15 Europe/Kyiv offer, on two channels sharing one stamp per day: the `hoply-day-nudge.py`
   hook (SessionStart and UserPromptSubmit, stdlib only, silent and offline unless due) and a workday
   desktop notification (launchd `StartInterval` 900 on macOS, a `Mon..Fri` systemd timer on Linux).
-- Hoply token handling: `~/.config/hoply/token` (0600) read by a `headers.sh` helper (0700) that Claude
-  Code runs per connection, so the token never lands in `~/.claude.json`.
+- CI token handling: `~/.config/hoply/token` (0600) read by a `headers.sh` helper (0700) that Claude
+  Code runs per connection, so the token never lands in `~/.claude.json`; never asked interactively.
 - Four bundled general skills: `commit`, `review-code` (with `rules.md`), `fix-pr-comments`, `github`.
 - `install.sh --skills LIST` and `--hoply-reminder / --no-hoply-reminder`, remembered in `config.json`
   (`skills`, `hoply.reminder`; `--no-hoply-reminder` also mutes the in-session nudge). A skill a later pick
   leaves out moves to `~/.claude/kaizen-backups/skills/`, never deleted. `uninstall.sh --hoply` removes the MCP
   entry and `~/.config/hoply`.
 - `npm/` package (`jb-kaizen`, bin `jb-kaizen`) and `brew/jb-kaizen.rb` formula for the tap.
-- `/kaizen:setup` gains an eighth question (connect Hoply) and sends the token to the terminal, never the chat.
+- `/kaizen:setup` gains an eighth question (connect Hoply): it adds the server and points to `/mcp` -> hoply -> Authenticate, never a token in the chat.
 
 ### Changed
 - `bootstrap.sh` hands off to `install-entry.sh`; an existing clone install keeps upgrading in place.

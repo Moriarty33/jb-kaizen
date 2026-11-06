@@ -73,7 +73,11 @@ fi
 
 if [ "$HOPLY" -eq 1 ]; then
   echo "==> Hoply"
-  if command -v "${CLAUDE_BIN:-claude}" >/dev/null 2>&1; then run "${CLAUDE_BIN:-claude}" mcp remove hoply --scope user >/dev/null 2>&1 || true; say "removed MCP server hoply"; fi
+  if command -v "${CLAUDE_BIN:-claude}" >/dev/null 2>&1; then
+    run "${CLAUDE_BIN:-claude}" mcp logout hoply >/dev/null 2>&1 || true
+    run "${CLAUDE_BIN:-claude}" mcp remove hoply --scope user >/dev/null 2>&1 || true
+    say "signed out of Hoply and removed MCP server hoply"
+  fi
   HOPLY_DIR="${HOPLY_CONFIG_DIR:-$HOME/.config/hoply}"
   [ -d "$HOPLY_DIR" ] && { run rm -rf "$HOPLY_DIR"; say "removed $HOPLY_DIR (token and headers helper)"; }
 fi

@@ -56,12 +56,14 @@ The engine sends nothing anywhere else. Transcripts are read locally with `grep`
 
 ## The Hoply pairing
 
-- **Token.** Asked once with hidden input (or `--hoply-token-stdin`), shape-checked (`hpt_` + 43 letters and
-  digits), written to `~/.config/hoply/token` (file 0600, folder 0700). Claude Code gets it only through
-  `~/.config/hoply/headers.sh` (0700), registered as the MCP server's `headersHelper`, so it never lands in
-  `~/.claude.json` or in `claude mcp get` output. `/kaizen:setup` never asks for it in the chat: it sends you to
-  the terminal, because anything typed in a session is stored in its transcript. `uninstall.sh --hoply` removes
-  the server entry and the folder; revoke the token itself in Hoply - Connectors.
+- **Sign-in.** The installer adds Hoply as a plain HTTP MCP server (no header) and runs `claude mcp login hoply`,
+  which opens the browser to sign in with your Hoply account (OAuth with PKCE); Claude Code stores and refreshes
+  that sign-in itself. Nothing is ever asked for in the chat: anything typed in a session is stored in its
+  transcript. `uninstall.sh --hoply` runs `claude mcp logout hoply` and removes the server entry.
+- **CI token.** Only `--token` / `HOPLY_TOKEN` (never asked interactively): shape-checked (`hpt_` + 43 letters
+  and digits), written to `~/.config/hoply/token` (file 0600, folder 0700) and sent only through
+  `~/.config/hoply/headers.sh` (0700) as the server's `headersHelper`, so it never lands in `~/.claude.json`.
+  Prefer the env var: a `--token` value shows in the process list. Revoke it in Hoply - Connectors.
 - **What Hoply sees.** Only MCP tool calls. The server is added at user scope, so every Claude Code session can
   reach its tools, not only `hoply-day`; Claude Code asks before each write tool, and `claude mcp remove hoply -s user`
   (or `uninstall.sh --hoply`) takes it away. Nothing from your sessions, transcripts or the self-learn store is

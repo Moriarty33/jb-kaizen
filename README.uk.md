@@ -72,20 +72,21 @@ Memory проєкту - найдорожчий вхід: `MEMORY.md` ванта�
 ### Одним рядком
 
 ```bash
-npx -y jb-kaizen                                                   # Node 18+
-brew install moriarty33/tap/jb-kaizen && jb-kaizen                 # Homebrew
-curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/v1.2.0/bootstrap.sh | bash
+npx -y jb-kaizen
 ```
 
-Усі три запускають той самий інсталятор, і він питає лише дві речі:
+Потрібен Node 18+. Інсталятор питає лише дві речі:
 
 1. **Поставити рекомендований набір? [Y/n]** - Y додає плагін Claude Code з усіма скілами, нічне навчання о 03:07,
    хук роутингу, аліаси `/kz-*` і нагадування Hoply в робочі дні. n: введіть потрібні скіли через кому
    (`hoply-day, commit`) - і отримаєте саме їх, як персональні скіли.
-2. **Ваш токен Hoply** (введення приховане, Enter пропускає) - див. [У парі з Hoply](#у-парі-з-hoply).
+2. **Підключити Hoply? [Y/n]** - Y відкриває браузер, щоб увійти з вашим акаунтом Hoply, і повертає вас у
+   термінал. Жодного токена копіювати не треба - див. [У парі з Hoply](#у-парі-з-hoply).
 
 Решта бере дефолти; змінити їх можна потім через `/kaizen:setup` або `./install.sh --wizard`. Для скриптів:
 `jb-kaizen --yes` (рекомендований набір без Hoply), `jb-kaizen --hoply` (лише підключити Hoply), `jb-kaizen --help`.
+Інші способи встановлення, ті самі два питання: `brew install moriarty33/tap/jb-kaizen && jb-kaizen` або
+`curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/v1.2.0/bootstrap.sh | bash`.
 
 ### Усередині Claude Code (плагін)
 
@@ -154,11 +155,12 @@ cd jb-kaizen
   замовкають, щойно день закрито; `--no-hoply-reminder` вимикає обидва.
 - **`/kaizen:hoply-day`** показує, що вже записано, що ще не синхронізовано, і відкриті пропозиції; ви
   підтверджуєте, правите або відхиляєте їх, і нічого не записується, поки ви не скажете «так» точному списку.
-- **Підключення:** у Hoply відкрийте Connectors - Claude Code, скопіюйте токен і вставте, коли інсталятор
-  спитає (або пізніше: `npx -y jb-kaizen --hoply`). Hoply додається як віддалений MCP-сервер (`claude mcp get hoply`).
-- **Приватність:** токен лежить у `~/.config/hoply/token` (0600) і доходить до Claude Code лише через скрипт
-  `headersHelper`, ніколи не через `~/.claude.json`. Hoply не бачить нічого з ваших сесій; формулювання робить
-  Claude локально, а текст із Hoply (назви зустрічей, нотатки) - це дані, ніколи не інструкції.
+- **Підключення:** відповідайте Y (або пізніше: `npx -y jb-kaizen --hoply`). Hoply додається як віддалений
+  MCP-сервер, а `claude mcp login hoply` відкриває браузер, щоб увійти з вашим акаунтом Hoply; коли треба увійти знову,
+  Claude Code покаже `/mcp` -> hoply -> Authenticate. Лише для CI: `HOPLY_TOKEN=hpt_... npx -y jb-kaizen --yes`.
+- **Приватність:** вхід зберігає сам Claude Code; жодного токена ні у файлі, ні в чаті. Hoply бачить лише
+  виклики MCP і нічого з ваших сесій; формулювання робить Claude локально, а текст із Hoply (назви зустрічей,
+  нотатки) - це дані, ніколи не інструкції.
 
 ## Вбудовані скіли
 
@@ -187,7 +189,7 @@ cd jb-kaizen
 | `~/.claude/hooks/skill-router.py` | шлях клонування/bootstrap: хук `UserPromptSubmit`, один рядок підказки, коли збігається вивчена фраза; інакше тиша - плагін приносить цей хук сам, див. рядок вище |
 | `~/.claude/skills/{hoply-day,commit,review-code,fix-pr-comments,github}/` | шлях клонування/bootstrap: перегляд дня Hoply і [вбудовані скіли](#вбудовані-скіли); ваш скіл з такою самою назвою лишається |
 | `~/.claude/hooks/hoply-day-nudge.py` | шлях клонування/bootstrap: хук `SessionStart` + `UserPromptSubmit`, що раз на робочий день з 17:15 за Києвом пропонує переглянути день - плагін приносить його в `hooks/hooks.json` |
-| `~/.config/hoply/token`, `headers.sh` | токен Hoply (0600) і `headersHelper`, що його надсилає; `uninstall.sh --hoply` прибирає обидва |
+| `~/.config/hoply/token`, `headers.sh` | лише CI (`HOPLY_TOKEN`): персональний токен (0600) і `headersHelper`, що його надсилає; `uninstall.sh --hoply` прибирає обидва |
 | `~/Library/LaunchAgents/com.self-learn.hoply-day.plist` | сповіщення в робочі дні (Linux: `self-learn-hoply-day.timer`); `--no-hoply-reminder` прибирає його і вимикає пропозицію в сесії |
 | `~/.claude/lib/claude-retry.sh` | обмежені ретраї, бюджет часу, kill усієї process group, стоп на auth-помилці |
 | `~/.claude/lib/skill-dir.sh` | резолвить теку скіла на диску для обох варіантів - клонування/bootstrap і плагіна; підключається нічним раннером і скриптами скілів |

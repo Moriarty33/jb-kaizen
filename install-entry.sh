@@ -8,18 +8,21 @@ CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 SL_HOME="${SELF_LEARN_HOME:-$CLAUDE_DIR/self-learn}"
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"
 MARKETPLACE="${JB_KAIZEN_MARKETPLACE:-Moriarty33/jb-kaizen}"
-HOPLY_URL=""; ASK=0; ASSUME_YES=0; HOPLY_ONLY=0; HOPLY_SKIP=0; HOPLY_STDIN=0; PASS=()
+HOPLY_URL=""; ASK=0; ASSUME_YES=0; HOPLY_ONLY=0; HOPLY_SKIP=0; TOKEN_ARG=""; PASS=()
 
 usage() {
   cat <<'EOF'
 jb-kaizen - JB Kaizen for Claude Code, with the Hoply day review.
 
   jb-kaizen                      two questions: the recommended set [Y/n] (n = type the skills
-                                 you want), then your Hoply token (Enter skips); defaults for the rest
+                                 you want), then "Connect Hoply? [Y/n]" - Y opens your browser
+                                 to sign in and comes back here; defaults for the rest
   jb-kaizen --yes                recommended set, no questions, Hoply skipped
-  jb-kaizen --hoply              only connect Hoply (asks for the token, hidden)
-  jb-kaizen --hoply-token-stdin  read the token from stdin instead of asking (scripts)
+  jb-kaizen --hoply              only connect Hoply (browser sign-in)
   jb-kaizen --no-hoply           never ask about Hoply
+  HOPLY_TOKEN=hpt_... jb-kaizen --yes
+  jb-kaizen --token hpt_...      CI and headless machines only: a personal token instead of the
+                                 browser (prefer the env var: a flag shows in the process list)
   jb-kaizen --hoply-url URL      another Hoply MCP endpoint, e.g. http://localhost:3000/mcp
   jb-kaizen --ask                ask the questions even without a terminal (answers from stdin)
   jb-kaizen --version | --help
@@ -35,7 +38,7 @@ while [ $# -gt 0 ]; do
     "--ask") ASK=1; shift ;;
     "--hoply") HOPLY_ONLY=1; shift ;;
     "--no-hoply") HOPLY_SKIP=1; shift ;;
-    "--hoply-token-stdin") HOPLY_STDIN=1; shift ;;
+    "--token") TOKEN_ARG="${2:?--token needs a value}"; shift 2 ;;
     "--hoply-url") HOPLY_URL="${2:?--hoply-url needs a URL}"; shift 2 ;;
     "--version"|-V) cat "$SRC/VERSION"; exit 0 ;;
     -h|--help) usage; exit 0 ;;
@@ -44,6 +47,7 @@ while [ $# -gt 0 ]; do
 done
 if [ "$ASSUME_YES" -eq 0 ] && [ -t 0 ]; then ASK=1; fi
 if [ "$ASSUME_YES" -eq 1 ]; then ASK=0; fi
+HOPLY_TOKEN_VALUE="${TOKEN_ARG:-${HOPLY_TOKEN:-}}"
 
 say()  { printf '  %s\n' "$*"; }
 step() { printf '\n==> %s\n' "$*"; }
@@ -81,9 +85,9 @@ if [ "$HOPLY_ONLY" -eq 0 ]; then
 fi
 
 if [ "$HOPLY_SKIP" -eq 0 ]; then
-  if [ "$HOPLY_STDIN" -eq 1 ]; then hoply_step stdin || exit $?
+  if [ -n "$HOPLY_TOKEN_VALUE" ]; then hoply_step token || exit $?
+  elif [ "$HOPLY_ONLY" -eq 1 ]; then hoply_step connect || exit $?
   elif [ "$ASK" -eq 1 ]; then hoply_step ask || exit $?
-  elif [ "$HOPLY_ONLY" -eq 1 ]; then echo "--hoply asks for the token: run it in a terminal, or pipe it with --hoply-token-stdin" >&2; exit 2
   fi
 fi
 hoply_summary

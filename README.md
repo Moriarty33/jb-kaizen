@@ -87,20 +87,21 @@ Optional: GitHub CLI `gh` (authenticated) for PR-review mining, `npx ccusage` fo
 ### One line
 
 ```bash
-npx -y jb-kaizen                                                   # Node 18+
-brew install moriarty33/tap/jb-kaizen && jb-kaizen                 # Homebrew
-curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/v1.2.0/bootstrap.sh | bash
+npx -y jb-kaizen
 ```
 
-All three run the same installer, and it asks two things only:
+Needs Node 18+. It asks two things only:
 
 1. **Install the recommended set? [Y/n]** - Y adds the Claude Code plugin with every skill, nightly learning at
    03:07, the routing hook, the `/kz-*` aliases and the workday Hoply reminder. n: type the skills you want,
    comma separated (`hoply-day, commit`), and you get exactly those as personal skills.
-2. **Your Hoply token** (hidden input, Enter skips) - see [Pair with Hoply](#pair-with-hoply).
+2. **Connect Hoply? [Y/n]** - Y opens your browser to sign in with your Hoply account, then brings you back to
+   the terminal. No token to copy - see [Pair with Hoply](#pair-with-hoply).
 
 Everything else takes a default; change it later with `/kaizen:setup` or `./install.sh --wizard`. Scripted:
 `jb-kaizen --yes` (recommended set, no Hoply), `jb-kaizen --hoply` (only connect Hoply), `jb-kaizen --help`.
+Other ways to install, same two questions: `brew install moriarty33/tap/jb-kaizen && jb-kaizen`, or
+`curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/v1.2.0/bootstrap.sh | bash`.
 
 ### Inside Claude Code (plugin)
 
@@ -167,7 +168,7 @@ then `/plugin uninstall kaizen@jb-kaizen`.
 | `~/.claude/hooks/skill-router.py` | clone/bootstrap path: `UserPromptSubmit` hook, one-line nudge toward a skill when your learned phrasings match, silent otherwise - the plugin delivers this hook itself, see the row above |
 | `~/.claude/skills/{hoply-day,commit,review-code,fix-pr-comments,github}/` | clone/bootstrap path: the Hoply day review and the [bundled skills](#bundled-skills); a same-named skill of yours is kept |
 | `~/.claude/hooks/hoply-day-nudge.py` | clone/bootstrap path: `SessionStart` + `UserPromptSubmit` hook offering the day review once per workday from 17:15 Europe/Kyiv - the plugin ships it in `hooks/hooks.json` |
-| `~/.config/hoply/token`, `headers.sh` | the Hoply token (0600) and the `headersHelper` that sends it; `uninstall.sh --hoply` removes both |
+| `~/.config/hoply/token`, `headers.sh` | CI only (`HOPLY_TOKEN`): a personal token (0600) and the `headersHelper` that sends it; `uninstall.sh --hoply` removes both |
 | `~/Library/LaunchAgents/com.self-learn.hoply-day.plist` | the workday desktop reminder (Linux: `self-learn-hoply-day.timer`); `--no-hoply-reminder` removes it and mutes the in-session offer |
 | `~/.claude/lib/claude-retry.sh` | bounded retries, wall-clock budget, process-group kill, auth-fail short-circuit |
 | `~/.claude/lib/skill-dir.sh` | resolves the on-disk skill dir for both the clone/bootstrap and plugin layouts; sourced by the nightly runner and the skill scripts |
@@ -192,11 +193,12 @@ sessions, Jira links - and proposes what is missing. Paired with JB Kaizen, it c
   once the day is done; `--no-hoply-reminder` mutes both.
 - **`/kaizen:hoply-day`** shows what is tracked, what is not synced yet, and the open proposals; you confirm,
   fix or dismiss them, and nothing is written until you say yes to the exact list.
-- **Connect:** in Hoply open Connectors - Claude Code, copy the token, and paste it when the installer asks
-  (or later: `npx -y jb-kaizen --hoply`). Hoply is added as a remote MCP server (`claude mcp get hoply`).
-- **Privacy:** the token stays in `~/.config/hoply/token` (0600) and reaches Claude Code only through a
-  `headersHelper` script, never `~/.claude.json`. Hoply sees nothing from your sessions; Claude does the
-  wording locally, and Hoply's own text (meeting titles, notes) is treated as data, never as instructions.
+- **Connect:** answer Y (or later: `npx -y jb-kaizen --hoply`). Hoply is added as a remote MCP server and
+  `claude mcp login hoply` opens your browser to sign in with your Hoply account; signed out later, Claude Code
+  shows `/mcp` -> hoply -> Authenticate. CI and headless machines only: `HOPLY_TOKEN=hpt_... npx -y jb-kaizen --yes`.
+- **Privacy:** Claude Code keeps the sign-in itself; there is no token in a file or in the chat. Hoply sees only
+  the MCP calls, nothing from your sessions; Claude does the wording locally, and Hoply's own text (meeting
+  titles, notes) is treated as data, never as instructions.
 
 ## Bundled skills
 
@@ -279,9 +281,7 @@ the private lineage ran 30-40 agents and 1-3M tokens; a quiet one exits in minut
 CI runs the smoke test on both `ubuntu-latest` and `macos-latest`.
 
 **Where is my data?** In `~/.claude/self-learn`. If you point it at a remote, that remote holds your project
-names, paths, PR themes and distilled feedback - **keep it private**.
-
-**Can I run it for one repo only?** `/self-learn --repos <name>` or set `enabled: false` on the others.
+names, paths, PR themes and distilled feedback - **keep it private**. One repo only: `/self-learn --repos <name>`.
 
 ## Development
 

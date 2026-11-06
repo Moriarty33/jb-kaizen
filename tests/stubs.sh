@@ -11,6 +11,9 @@ case "\$1 \$2" in
   "mcp get") [ -f "$STUB_LOG/mcp-hoply" ] || exit 1; printf 'hoply:\n  Status: connected\n' ;;
   "mcp add-json") if [ -f "$STUB_LOG/fail-add-json" ]; then echo "stub: add-json refused" >&2; exit 1; fi; touch "$STUB_LOG/mcp-hoply" ;;
   "mcp remove") rm -f "$STUB_LOG/mcp-hoply" ;;
+  "mcp add") if [ -f "$STUB_LOG/fail-mcp-add" ]; then echo "stub: add refused" >&2; exit 1; fi; touch "$STUB_LOG/mcp-hoply" ;;
+  "mcp --help") printf 'Commands:\n  add [options] <name> <commandOrUrl>\n'; [ -f "$STUB_LOG/no-mcp-login" ] || printf '  login [options] <name>  Authenticate with an MCP server\n' ;;
+  "mcp login") if [ -f "$STUB_LOG/fail-login" ]; then exit 1; fi ;;
   "plugin marketplace") if [ "\$3" = add ]; then touch "$STUB_LOG/mkt-kaizen"; elif [ -f "$STUB_LOG/mkt-kaizen" ]; then echo jb-kaizen; fi ;;
   "plugin list") if [ -f "$STUB_LOG/plugin-kaizen" ]; then echo "kaizen@jb-kaizen"; fi ;;
   "plugin install") touch "$STUB_LOG/plugin-kaizen" ;;
