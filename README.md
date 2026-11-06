@@ -15,6 +15,8 @@
   <a href="README.uk.md"><img alt="Українською" src="https://img.shields.io/badge/README-українською-fcd34d?style=flat-square"></a>
 </p>
 
+<p align="center"><sub><b>Sponsored by <a href="https://hoply.work">Hoply</a></b> - it gathers your week from Google Calendar, GitHub, Jira and Harvest, so you approve your hours instead of typing them.</sub></p>
+
 ---
 
 Claude Code gets its behaviour from files you own: `~/.claude/skills/*/SKILL.md`, `~/.claude/agents/*.md`,
@@ -33,8 +35,6 @@ kind of chore that never happens. **JB Kaizen** turns that chore into a loop:
 Run it for a month and the compounding is visible: the reviewer stops missing the same class of bug, the
 routing hook sends "check in logs why it happened" to the right skill on the first try, the tokens per task go
 down, and you spend the morning on work instead of on re-explaining yourself.
-
-It also pairs with [Hoply](#pair-with-hoply): at 17:15 Claude Code offers to review and confirm your tracked day.
 
 > Extracted from a private setup that ran this loop for **66 consecutive epochs** (June - September 2026) over
 > ~70 repositories. Everything project-specific was stripped; every hard-won engine rule stayed.

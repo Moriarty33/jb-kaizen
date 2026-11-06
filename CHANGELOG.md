@@ -6,6 +6,7 @@ All notable changes to this extension are documented here. The format follows
 ## [1.2.0] - 2026-11-06
 
 One line installs it all, and JB Kaizen pairs with [Hoply](https://hoply.work) for a daily time review.
+JB Kaizen has no paid tier any more: the Pro edition is retired, and Hoply sponsors the project.
 
 ### Added
 - One-line installers: `npx -y jb-kaizen`, `brew install moriarty33/tap/jb-kaizen && jb-kaizen`, and

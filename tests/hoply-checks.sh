@@ -31,6 +31,9 @@ if [ -f "$PUB" ]; then
   CL="$(sed -n "s/^CLIENT_LEAK='\(.*\)'$/\1/p" "$PUB")"
   no_client_leak() { [ -n "$CL" ] && no_leak "$CL"; }; check no_client_leak
 else ok "client-name leak check skipped (no private store around this checkout)"; fi
+check no_leak "pad""dle|prem""ium|pur""chase|jb-kaizen""-pro|licen[cs]e key"   # no paid tier; split so this line never matches itself
+check no_leak "time""sheet|та""бел"
+for r in README.md README.uk.md; do check grep -q 'href="https://hoply.work"' "$ROOT/$r"; done
 EMDASH="$(printf '\342\200\224')"
 for s in hoply-day commit review-code fix-pr-comments github; do check bash -c '! grep -rqF "$1" "$2"' _ "$EMDASH" "$ROOT/skills/$s"; done
 
@@ -94,6 +97,7 @@ check test ! -d "$H5/.claude/skills/hoply-day"                  # the plugin del
 check grep -qF 'Connect Hoply? [Y/n]' "$T/entry-y.log"
 check not_logged 'mcp add'; check not_logged 'mcp login'; check test ! -d "$H5/.config/hoply"   # n: nothing added
 check grep -q 'Hoply:   not connected' "$T/entry-y.log"
+check grep -q 'Sponsored by Hoply (https://hoply.work)' "$T/entry-y.log"
 case "$(uname -s)" in
   Darwin) P5="$H5/Library/LaunchAgents/com.self-learn.hoply-day.plist"; check test -f "$P5"; check grep -q '<string>--plugin</string>' "$P5"
           check grep -q "bootstrap gui/.*com.self-learn.hoply-day.plist" "$STUB_LOG/launchctl.log"

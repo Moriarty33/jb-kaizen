@@ -118,4 +118,5 @@ hoply_summary() {
   else
     say "Hoply:   not connected - add it any time: npx -y jb-kaizen --hoply"
   fi
+  printf '\n  %s\n' "Sponsored by Hoply (https://hoply.work) - it gathers your week from Google Calendar, GitHub, Jira and Harvest, so you approve your hours instead of typing them."
 }
