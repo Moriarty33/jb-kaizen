@@ -1,7 +1,7 @@
 {
   "name": "kaizen",
   "displayName": "JB Kaizen",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Self-improvement engine for your Claude Code setup: learns from commits and sessions to refine agents and skills, with a routing hook that keeps skill triggering sharp - plus the Hoply day review at 17:15 and four everyday git/GitHub skills.",
   "author": { "name": "Bogdan Jaminski", "url": "https://github.com/Moriarty33" },
   "homepage": "https://github.com/Moriarty33/jb-kaizen",

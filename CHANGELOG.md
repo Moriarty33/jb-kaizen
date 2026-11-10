@@ -3,6 +3,21 @@
 All notable changes to this extension are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [1.2.1] - 2026-11-10
+
+### Changed
+- `hoply-day`: every note starts with its issue key (`<ISSUE-KEY>: <description>`), since the time tracker
+  shows the notes as the entry's text and drops the title; a confirmed proposal without such notes gets a fix
+  that sets them first.
+- `hoply-day`: every row shown for approval (plans, tables, the write gate) names its `Project / Task`; a row
+  with no project is not ready for the gate.
+- `hoply-day`: new step 4a fills a stretch the person names from the day's work, as a table of slots, issue
+  keys, exact notes and project / task.
+- `hoply-day`: `logTime` runs only after a fresh `getTimeEntries` read and skips a slot that already holds an
+  entry; the report re-reads the day and shows the tracker's text, so a missing key is caught at once.
+  Re-creating entries deleted in the calendar creates only the slots that are empty by then.
+- `hoply-day`: the day is not stamped done when the writes cover only part of the working day.
+
 ## [1.2.0] - 2026-11-06
 
 One line installs it all, and JB Kaizen pairs with [Hoply](https://hoply.work) for a daily time review.

@@ -101,7 +101,7 @@ Needs Node 18+. It asks two things only:
 Everything else takes a default; change it later with `/kaizen:setup` or `./install.sh --wizard`. Scripted:
 `jb-kaizen --yes` (recommended set, no Hoply), `jb-kaizen --hoply` (only connect Hoply), `jb-kaizen --help`.
 Other ways to install, same two questions: `brew install moriarty33/tap/jb-kaizen && jb-kaizen`, or
-`curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/v1.2.0/bootstrap.sh | bash`.
+`curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/v1.2.1/bootstrap.sh | bash`.
 
 ### Inside Claude Code (plugin)
 

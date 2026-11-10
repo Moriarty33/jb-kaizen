@@ -1,6 +1,6 @@
 {
   "name": "jb-kaizen",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "One-line installer for JB Kaizen, the Claude Code setup that improves itself every night, with the Hoply day review.",
   "bin": {
     "jb-kaizen": "bin/jb-kaizen.js"

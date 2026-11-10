@@ -1,8 +1,8 @@
 class JbKaizen < Formula
   desc "Self-improving Claude Code setup with the Hoply day review"
   homepage "https://github.com/Moriarty33/jb-kaizen"
-  url "https://github.com/Moriarty33/jb-kaizen/archive/refs/tags/v1.2.0.tar.gz"
-  # Placeholder, filled at release: shasum -a 256 of the v1.2.0 tarball; then copy this file to the tap's Formula/.
+  url "https://github.com/Moriarty33/jb-kaizen/archive/refs/tags/v1.2.1.tar.gz"
+  # Placeholder, filled at release: shasum -a 256 of the v1.2.1 tarball; then copy this file to the tap's Formula/.
   sha256 "0000000000000000000000000000000000000000000000000000000000000000"
   license "MIT"
 

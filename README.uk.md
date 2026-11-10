@@ -86,7 +86,7 @@ npx -y jb-kaizen
 Решта бере дефолти; змінити їх можна потім через `/kaizen:setup` або `./install.sh --wizard`. Для скриптів:
 `jb-kaizen --yes` (рекомендований набір без Hoply), `jb-kaizen --hoply` (лише підключити Hoply), `jb-kaizen --help`.
 Інші способи встановлення, ті самі два питання: `brew install moriarty33/tap/jb-kaizen && jb-kaizen` або
-`curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/v1.2.0/bootstrap.sh | bash`.
+`curl -fsSL https://raw.githubusercontent.com/Moriarty33/jb-kaizen/v1.2.1/bootstrap.sh | bash`.
 
 ### Усередині Claude Code (плагін)
 

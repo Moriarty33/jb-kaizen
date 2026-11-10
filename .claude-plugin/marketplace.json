@@ -8,7 +8,7 @@
       "source": "./",
       "displayName": "JB Kaizen",
       "description": "Self-improvement engine for a Claude Code setup: learns from commits and sessions to refine agents and skills, with a routing hook that keeps skill triggering sharp - plus the Hoply day review at 17:15 and four everyday git/GitHub skills.",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "license": "MIT",
       "category": "productivity",
       "keywords": ["self-improvement", "nightly", "skills", "agents", "automation", "time-tracking", "hoply"]

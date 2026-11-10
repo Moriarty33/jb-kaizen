@@ -5,7 +5,7 @@ set -euo pipefail
 JB_KAIZEN_REPO="${JB_KAIZEN_REPO:-https://github.com/Moriarty33/jb-kaizen.git}"
 JB_KAIZEN_DIR="${JB_KAIZEN_DIR:-$HOME/.jb-kaizen}"
 # The release this script ships with (tests/hoply-checks.sh keeps it equal to VERSION); a branch name works too.
-JB_KAIZEN_REF="${JB_KAIZEN_REF:-${JB_KAIZEN_BRANCH:-v1.2.0}}"
+JB_KAIZEN_REF="${JB_KAIZEN_REF:-${JB_KAIZEN_BRANCH:-v1.2.1}}"
 
 say()  { printf '  %s\n' "$*"; }
 step() { printf '\n==> %s\n' "$*"; }
